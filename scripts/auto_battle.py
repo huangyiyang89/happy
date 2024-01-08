@@ -130,17 +130,17 @@ class ChuanJiao(Strategy):
         lowest_friend = cg.battle_units.get_lowest_hp_per_friend()
         if low_hp_friends_count > 4:
             skill = cg.player.skills.get_skill("超強補血魔法")
-            if cg.player.mp > skill.max_level_cost and skill is not None:
+            if skill is not None and cg.player.mp > skill.max_level_cost:
                 cg.player.cast(skill, cg.player)
                 return
         elif cross_heal_unit is not None:
             skill = cg.player.skills.get_skill("強力補血魔法")
-            if cg.player.mp > skill.max_level_cost and skill is not None:
+            if skill is not None and cg.player.mp > skill.max_level_cost:
                 cg.player.cast(skill, cross_heal_unit)
                 return
         elif lowest_friend.hp_per <= 50:
             skill = cg.player.skills.get_skill("補血魔法")
-            if cg.player.mp > skill.max_level_cost and skill is not None:
+            if skill is not None and cg.player.mp > skill.max_level_cost:
                 cg.player.cast(skill, lowest_friend)
                 return
         cg.player.attack(cg.battle_units.get_random_enemy())

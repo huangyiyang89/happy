@@ -13,7 +13,7 @@ class Script(happy.script.Script):
     def __init__(self) -> None:
         super().__init__()
         self.name = "高速战斗"
-        self.speed = 200
+        self.speed = 100
 
     def on_battle(self, cg: happy.core.Cg):
         t0 = cg.mem.read_double(0x0072B9D8)
