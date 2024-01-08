@@ -85,9 +85,11 @@ class Cgframe(customtkinter.CTkFrame):
 
     def refresh(self):
         """_summary_"""
-
-        self.cg.update()
-        self.player_name_label.configure(text=self.cg.player.name)
+        try:
+            self.cg.update()
+            self.player_name_label.configure(text=self.cg.player.name)
+        except Exception as e:
+            print(e)
         # 间隔1秒执行一次
         self.after(100, self.refresh)
 

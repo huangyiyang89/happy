@@ -139,18 +139,21 @@ class BattlePet(Service, Pet):
         self.mem.write_bytes(0x00475A8C, bytes.fromhex("74 73"), 2)
 
     def cast(self, skill: happy.skill.PetSkill, unit: happy.unit.Unit):
-        """_summary_
+        """normal attack while no mana
 
         Args:
             skill (happy.skill.PetSkill): _description_
             unit (happy.unit.Unit): _description_
         """
         position = unit.position
-        if "強力" in skill.name:
-            position = position + 0x14
-        if "超強" in skill.name:
-            position = 0x29 if unit.is_enemy else 0x28
-        self._execute_pet_command(f"W|{skill.index:X}|{position:X}")
+        if self.mp>skill.cost:
+            if "強力" in skill.name:
+                position = position + 0x14
+            if "超強" in skill.name:
+                position = 0x29 if unit.is_enemy else 0x28
+            self._execute_pet_command(f"W|{skill.index:X}|{position:X}")
+        else:
+            self.attack(position)
 
     def attack(self, unit):
         """_summary_

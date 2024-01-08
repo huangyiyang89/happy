@@ -43,14 +43,11 @@ class Script(happy.script.Script):
         a = cg.mem.read_int(0x005988AC)
         b = cg.mem.read_int(0x00598940)
         recv_message_buffer = cg.mem.read_string(0x00580CF0, encoding="utf-8")
-        if cg.is_player_turn:
-            if (
-                "M|" in recv_message_buffer
-                or "C|" in recv_message_buffer
-                or a != b
-            ):
-                print("waiting anime...")
-        self.strategy.player_action(cg)
+        
+        if "M|" in recv_message_buffer or "C|" in recv_message_buffer or a != b:
+            print("waiting anime...")
+        else:
+            self.strategy.player_action(cg)
 
     def on_pet_turn(self, cg: happy.core.Cg):
         """_summary_
@@ -108,11 +105,12 @@ class Strategy:
         pet = cg.pets.battle_pet
         target = cg.battle_units.get_random_enemy()
         heal_skill = pet.get_skill("吸血", "明鏡止水")
-        skill = pet.skills[0]
-        if pet.hp_per <= 70 and heal_skill is not None and pet.mp > heal_skill.cost:
+        guard_counter = pet.get_skill("崩擊")
+        enemies_count = len(cg.battle_units.enemies)
+        if enemies_count<4 and guard_counter is not None:
+            pet.cast(guard_counter,target)
+        if pet.hp_per <= 70 and heal_skill is not None:
             pet.cast(heal_skill, target)
-        elif pet.mp > skill.cost:
-            pet.cast(skill, target)
         else:
             pet.attack(target)
 
