@@ -1,7 +1,7 @@
 "script"
 import happy.script
 import happy.core
-
+import time
 
 class Script(happy.script.Script):
     """_summary_
@@ -40,14 +40,19 @@ class Script(happy.script.Script):
         Args:
             cg (happy.core.Cg): _description_
         """
+        
         a = cg.mem.read_int(0x005988AC)
         b = cg.mem.read_int(0x00598940)
-        recv_message_buffer = cg.mem.read_string(0x00580CF0, encoding="utf-8")
+        #recv_message_buffer = cg.mem.read_string(0x00580CF0, encoding="utf-8")
         
-        if "M|" in recv_message_buffer or "C|" in recv_message_buffer or a != b:
-            print("waiting anime...")
-        else:
+        if a==0 and b==0:
             self.strategy.player_action(cg)
+        else:
+            if a != b:
+                print("waiting anime...")
+            else:
+                time.sleep(3)
+                self.strategy.player_action(cg)
 
     def on_pet_turn(self, cg: happy.core.Cg):
         """_summary_
