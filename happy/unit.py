@@ -224,14 +224,14 @@ class UnitCollection(Service):
         back = 0
         back_target = None
         front_target = None
-        for i in range(0, 4):
-            if self.enemies[i].exist:
-                back = back + 1
-                back_target = self.enemies[i]
-        for i in range(5, 9):
-            if self.enemies[i].exist:
-                front = front + 1
-                front_target = self.enemies[i]
+        
+        for enemy in self.enemies:
+            if enemy.position>14:
+                front+=1
+                front_target=enemy
+            else:
+                back+=1
+                back_target=enemy
         return back_target if back >= front else front_target
 
     def __getitem__(self, index):

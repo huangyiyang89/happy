@@ -7,6 +7,7 @@ import happy.core
 import happy.script
 
 
+
 class App(customtkinter.CTk):
     """_summary_
 
@@ -66,21 +67,26 @@ class Cgframe(customtkinter.CTkFrame):
         self.player_name_label.grid(row=0, column=0)
 
         # load scripts
-        self.load_script_names = get_all_py_files()
+        self.scripts_directory = get_scripts_directory()
+        self.load_script_names = get_all_py_files(self.scripts_directory)
         self.load_scripts = []
         for script_name in self.load_script_names:
-            self.load_scripts.append(cg.load_script("scripts." + script_name, "Script"))
+            if "config" in script_name:
+                continue
+            self.load_scripts.append(
+                cg.load_script(self.scripts_directory, script_name, "Script")
+            )
 
         self.switches = []
 
-        for index,script in enumerate(self.load_scripts):
+        for index, script in enumerate(self.load_scripts):
             switch = customtkinter.CTkSwitch(
                 self,
                 text=script.name,
                 command=lambda script=script: self.switch_script_enable(script),
             )
             self.switches.append(switch)
-            switch.grid(row=index+1, column=0)
+            switch.grid(row=index + 1, column=0)
         self.refresh()
 
     def refresh(self):
@@ -88,18 +94,17 @@ class Cgframe(customtkinter.CTkFrame):
         try:
             self.cg.update()
             self.player_name_label.configure(text=self.cg.player.name)
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-except
             print(e)
         # 间隔1秒执行一次
         self.after(100, self.refresh)
-
 
     def switch_script_enable(self, script):
         """_summary_"""
         script.enable = not script.enable
 
 
-def get_all_py_files(directory="scripts"):
+def get_all_py_files(scripts_directory):
     """_summary_
 
     Args:
@@ -108,16 +113,24 @@ def get_all_py_files(directory="scripts"):
     Returns:
         _type_: _description_
     """
-    # 构建目标目录路径
-    scripts_directory = os.path.join(
-        os.path.dirname(sys.argv[0]), directory
-    )
-    print(scripts_directory)
     # 获取目录中的所有 .py 文件
     py_files = glob.glob(os.path.join(scripts_directory, "*.py"))
     # 提取文件名（不包含扩展名）
     file_names = [os.path.splitext(os.path.basename(file))[0] for file in py_files]
     return file_names
+
+
+def get_scripts_directory(directory="scripts\\"):
+    """_summary_
+
+    Args:
+        directory (str, optional): _description_. Defaults to "scripts\".
+
+    Returns:
+        _type_: _description_
+    """
+    scripts_directory = os.path.join(os.path.dirname(sys.argv[0]), directory)
+    return scripts_directory
 
 
 app = App()

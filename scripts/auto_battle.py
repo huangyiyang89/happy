@@ -1,7 +1,8 @@
 "script"
+import asyncio
 import happy.script
 import happy.core
-import time
+
 
 class Script(happy.script.Script):
     """_summary_
@@ -15,7 +16,7 @@ class Script(happy.script.Script):
         self.name = "自动战斗"
         self.strategy = None
         self.enable_use_potion = False
-        self.force_use_first_skill =False
+        self.force_use_first_skill = False
 
     def on_update(self, cg: happy.core.Cg):
         """_summary_
@@ -33,25 +34,22 @@ class Script(happy.script.Script):
         if self.strategy is None or self.strategy.job_name != cg.player.job_name:
             self.strategy = Strategy.get_strategy(cg)
 
-
     def on_player_turn(self, cg: happy.core.Cg):
         """_summary_
 
         Args:
             cg (happy.core.Cg): _description_
         """
-        
         a = cg.mem.read_int(0x005988AC)
         b = cg.mem.read_int(0x00598940)
-        #recv_message_buffer = cg.mem.read_string(0x00580CF0, encoding="utf-8")
-        
-        if a==0 and b==0:
+
+        if a == 0 and b == 0:
             self.strategy.player_action(cg)
         else:
             if a != b:
                 print("waiting anime...")
             else:
-                time.sleep(3)
+                asyncio.run(asyncio.sleep(3))
                 self.strategy.player_action(cg)
 
     def on_pet_turn(self, cg: happy.core.Cg):
@@ -61,7 +59,6 @@ class Script(happy.script.Script):
             cg (happy.core.Cg): _description_
         """
         self.strategy.pet_action(cg)
-
 
 
 class Strategy:
@@ -94,10 +91,14 @@ class Strategy:
         enemies_count = len(cg.battle_units.enemies)
         target = cg.battle_units.get_random_enemy()
         skill = cg.player.skills.get_aoe_skill()
-        if enemies_count>2 and skill is not None and cg.player.mp>=skill.max_level_cost:
+        if (
+            enemies_count > 2
+            and skill is not None
+            and cg.player.mp >= skill.max_level_cost
+        ):
             if "因果報應" in skill.name:
                 target = cg.battle_units.get_line_unit()
-            cg.player.cast(skill,target,skill.get_efficient_level(enemies_count))
+            cg.player.cast(skill, target, skill.get_efficient_level(enemies_count))
         else:
             cg.player.attack(target)
 
@@ -112,9 +113,9 @@ class Strategy:
         heal_skill = pet.get_skill("吸血", "明鏡止水")
         guard_counter = pet.get_skill("崩擊")
         enemies_count = len(cg.battle_units.enemies)
-        if enemies_count<4 and guard_counter is not None:
-            pet.cast(guard_counter,target)
-        if pet.hp_per <= 70 and heal_skill is not None:
+        if enemies_count < 6 and guard_counter is not None:
+            pet.cast(guard_counter, target)
+        elif pet.hp_per <= 70 and heal_skill is not None:
             pet.cast(heal_skill, target)
         else:
             pet.attack(target)

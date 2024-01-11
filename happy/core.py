@@ -1,9 +1,10 @@
 """
 HappyCG
 """
+import asyncio
 import importlib
-import threading
-import time
+import importlib.util
+import sys
 import happy.mem
 import happy.service
 import happy.unit
@@ -44,29 +45,29 @@ class Cg(happy.service.Service):
                 return new_cg
         return None
 
-    def _main_loop(self):
-        """not used yet"""
-        try:
-            while self._is_running:
-                time.sleep(1)
-                self.update()
-        except Exception as e:  # pylint: disable=broad-except
-            print(e)
-            self.close()
+    # def _main_loop(self):
+    #     """not used yet"""
+    #     try:
+    #         while self._is_running:
+    #             time.sleep(1)
+    #             self.update()
+    #     except Exception as e:  # pylint: disable=broad-except
+    #         print(e)
+    #         self.close()
 
-    def start_loop(self):
-        """start main loop not used yet"""
-        if not self._is_running:
-            self._is_running = True
-            self._thread = threading.Thread(target=self._main_loop)
-            self._thread.start()
+    # def start_loop(self):
+    #     """start main loop not used yet"""
+    #     if not self._is_running:
+    #         self._is_running = True
+    #         self._thread = threading.Thread(target=self._main_loop)
+    #         self._thread.start()
 
-    def close(self):
-        """close not used yet"""
-        if self._is_running:
-            self._is_running = False
-        Cg.__opened_cg_processes.remove(self.mem.process_id)
-        self.is_closed = True
+    # def close(self):
+    #     """close not used yet"""
+    #     if self._is_running:
+    #         self._is_running = False
+    #     Cg.__opened_cg_processes.remove(self.mem.process_id)
+    #     self.is_closed = True
 
     def update(self):
         """update all children and trigger events"""
@@ -117,19 +118,20 @@ class Cg(happy.service.Service):
         # 0046845D  原A3 C8 C2 C0 00 改90 90 90 90 90
         # 00468476  原89 0D C4 C2 C0 00 改90 90 90 90 90 90
         # 00C0C2C4 X 00C0C2C8 Y 00C0C2DC 置1
+        print(self.player.name+f"start going to {x} {y}")
         self.mem.write_bytes(0x0046845D, bytes.fromhex("90 90 90 90 90"), 5)
         self.mem.write_bytes(0x00468476, bytes.fromhex("90 90 90 90 90 90"), 6)
         self.mem.write_int(0x00C0C2C4, x)
         self.mem.write_int(0x00C0C2C8, y)
         self.mem.write_int(0x00C0C2DC, 1)
-        time.sleep(0.1)
+        asyncio.run(asyncio.sleep(0.1))
 
         # 还原
         self.mem.write_int(0x00C0C2DC, 0)
         self.mem.write_bytes(0x0046845D, bytes.fromhex("A3 C8 C2 C0 00"), 5)
         self.mem.write_bytes(0x00468476, bytes.fromhex("89 0D C4 C2 C0 00"), 6)
 
-    def load_script(self, module_name, class_name, enable=False):
+    def load_script(self, file_path,module_name, class_name, enable=False):
         """_summary_
 
         Args:
@@ -140,7 +142,10 @@ class Cg(happy.service.Service):
             _type_: _description_
         """
         try:
-            module = importlib.import_module(module_name)
+            spec = importlib.util.spec_from_file_location(module_name, file_path+module_name+".py")
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
             script_class = getattr(module, class_name)
             instance = script_class()
             if isinstance(instance, happy.script.Script):

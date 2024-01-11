@@ -1,5 +1,5 @@
 """player class"""
-import time
+import asyncio
 import happy.service
 import happy.unit
 import happy.skill
@@ -16,6 +16,9 @@ class Player(happy.service.Service):
     def __init__(self, mem) -> None:
         happy.service.Service.__init__(self, mem)
         self.skills = happy.skill.PlayerSkillCollection(mem)
+
+    def update(self):
+        self.skills.update()
 
     @property
     def hp(self):
@@ -106,7 +109,7 @@ class Player(happy.service.Service):
         self.mem.write_string(addr_player_buffer, player_battle_order + "\0")
         self.mem.write_bytes(addr_player_flag, bytes.fromhex("90 90"), 2)
         print(player_battle_order)
-        time.sleep(0.1)
+        asyncio.run(asyncio.sleep(0.1))
         # 还原
         self.mem.write_string(addr_player_buffer, "G\0")
         self.mem.write_bytes(addr_player_flag, bytes.fromhex("74 5E"), 2)

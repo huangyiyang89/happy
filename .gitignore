@@ -177,4 +177,8 @@ pyrightconfig.json
 download/
 *.exe
 
+#pyupdater
+pyu-data/
+.pyupdater/
+
 # End of https://www.toptal.com/developers/gitignore/api/python
