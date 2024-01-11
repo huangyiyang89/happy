@@ -1,7 +1,7 @@
 """
 HappyCG
 """
-import asyncio
+import time
 import importlib
 import importlib.util
 import sys
@@ -124,7 +124,7 @@ class Cg(happy.service.Service):
         self.mem.write_int(0x00C0C2C4, x)
         self.mem.write_int(0x00C0C2C8, y)
         self.mem.write_int(0x00C0C2DC, 1)
-        asyncio.run(asyncio.sleep(0.1))
+        time.sleep(0.1)
 
         # 还原
         self.mem.write_int(0x00C0C2DC, 0)

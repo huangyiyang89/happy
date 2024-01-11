@@ -1,5 +1,5 @@
 "script"
-import asyncio
+import time
 import happy.script
 import happy.core
 
@@ -42,14 +42,14 @@ class Script(happy.script.Script):
         """
         a = cg.mem.read_int(0x005988AC)
         b = cg.mem.read_int(0x00598940)
-
+        
         if a == 0 and b == 0:
             self.strategy.player_action(cg)
         else:
             if a != b:
                 print("waiting anime...")
             else:
-                asyncio.run(asyncio.sleep(3))
+                time.sleep(1)
                 self.strategy.player_action(cg)
 
     def on_pet_turn(self, cg: happy.core.Cg):
