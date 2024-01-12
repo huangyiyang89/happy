@@ -17,6 +17,7 @@ class Script(happy.script.Script):
         self.strategy = None
         self.enable_use_potion = False
         self.force_use_first_skill = False
+        self.try_to_eat = False
 
     def on_update(self, cg: happy.core.Cg):
         """_summary_
@@ -33,6 +34,8 @@ class Script(happy.script.Script):
         """
         if self.strategy is None or self.strategy.job_name != cg.player.job_name:
             self.strategy = Strategy.get_strategy(cg)
+
+        self.try_to_eat = False
 
     def on_player_turn(self, cg: happy.core.Cg):
         """_summary_
@@ -52,6 +55,8 @@ class Script(happy.script.Script):
                 time.sleep(1)
                 self.strategy.player_action(cg)
 
+
+
     def on_pet_turn(self, cg: happy.core.Cg):
         """_summary_
 
@@ -60,6 +65,10 @@ class Script(happy.script.Script):
         """
         self.strategy.pet_action(cg)
 
+    def on_not_battle(self, cg: happy.core.Cg):
+        if self.try_to_eat:
+            cg.eat_food()
+        self.try_to_eat =True
 
 class Strategy:
     """_summary_"""
@@ -88,16 +97,17 @@ class Strategy:
         Args:
             cg (happy.core.Cg): _description_
         """
-        enemies_count = len(cg.battle_units.enemies)
-        target = cg.battle_units.get_random_enemy()
+        enemies_count = len(cg.battle.units.enemies)
+        target = cg.battle.units.get_random_enemy()
         skill = cg.player.skills.get_aoe_skill()
+        
         if (
             enemies_count > 2
             and skill is not None
             and cg.player.mp >= skill.max_level_cost
         ):
             if "因果報應" in skill.name:
-                target = cg.battle_units.get_line_unit()
+                target = cg.battle.units.get_line_unit()
             cg.player.cast(skill, target, skill.get_efficient_level(enemies_count))
         else:
             cg.player.attack(target)
@@ -109,10 +119,10 @@ class Strategy:
             cg (happy.core.Cg): _description_
         """
         pet = cg.pets.battle_pet
-        target = cg.battle_units.get_random_enemy()
+        target = cg.battle.units.get_random_enemy()
         heal_skill = pet.get_skill("吸血", "明鏡止水")
         guard_counter = pet.get_skill("崩擊")
-        enemies_count = len(cg.battle_units.enemies)
+        enemies_count = len(cg.battle.units.enemies)
         if enemies_count < 6 and guard_counter is not None:
             pet.cast(guard_counter, target)
         elif pet.hp_per <= 70 and heal_skill is not None:
@@ -130,10 +140,10 @@ class ChuanJiao(Strategy):
 
     def player_action(self, cg: happy.core.Cg):
         low_hp_friends_count = sum(
-            1 for friend in cg.battle_units.friends if friend.hp_per <= 75
+            1 for friend in cg.battle.units.friends if friend.hp_per <= 75
         )
-        cross_heal_unit = cg.battle_units.get_cross_heal_unit(65)
-        lowest_friend = cg.battle_units.get_lowest_hp_per_friend()
+        cross_heal_unit = cg.battle.units.get_cross_heal_unit(65)
+        lowest_friend = cg.battle.units.get_lowest_hp_per_friend()
         if low_hp_friends_count > 4:
             skill = cg.player.skills.get_skill("超強補血魔法")
             if skill is not None and cg.player.mp > skill.max_level_cost:
@@ -149,4 +159,4 @@ class ChuanJiao(Strategy):
             if skill is not None and cg.player.mp > skill.max_level_cost:
                 cg.player.cast(skill, lowest_friend)
                 return
-        cg.player.attack(cg.battle_units.get_random_enemy())
+        cg.player.attack(cg.battle.units.get_random_enemy())

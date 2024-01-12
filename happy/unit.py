@@ -207,7 +207,7 @@ class UnitCollection(Service):
             if self._units[i].exist:
                 count = count_set_bits(units_bit & crosses[i])
                 if count == 4:
-                    return i
+                    return self._units[i]
                 if count == 3:
                     ret_pos = i
         if ret_pos > -1:

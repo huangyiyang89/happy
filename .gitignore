@@ -181,4 +181,8 @@ download/
 pyu-data/
 .pyupdater/
 
+
+#icon
+*.ico
+
 # End of https://www.toptal.com/developers/gitignore/api/python

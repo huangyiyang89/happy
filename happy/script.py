@@ -50,6 +50,13 @@ class Script:
             cg (_type_): _description_
         """
 
+    def on_player_second_turn(self, cg):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+        """
+
     def on_pet_turn(self, cg):
         """_summary_
 
