@@ -1,7 +1,6 @@
 """mem"""
+import time
 import happy.mem
-
-
 
 
 class Service:
@@ -18,32 +17,17 @@ class Service:
         """
         return self
 
-    def base62_encode(self,number):
-        """_summary_
-
-        Args:
-            number (_type_): _description_
-
-        Raises:
-            ValueError: _description_
-
-        Returns:
-            _type_: _description_
-        """
-        # 62 进制字符集
-        characters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        
-        # 判断输入是否为非负整数
-        if not isinstance(number, int) or number < 0:
-            raise ValueError("Input must be a non-negative integer")
-        
-        # 特殊情况：如果输入为0，则直接返回第一个字符
-        if number == 0:
-            return characters[0]
-        
-        base62 = ""
-        while number:
-            number, remainder = divmod(number, 62)
-            base62 = characters[remainder] + base62
-        
-        return base62
+    def _decode_send(self, content):
+        """发明文包"""
+        # 0057A718 缓存指针
+        # 00581000 空内存
+        # 使用空内存写入字符串
+        self.mem.write_string(0x00581000, content + " \0")
+        # 改写缓存地址
+        self.mem.write_bytes(0x005064BC, bytes.fromhex("B9 00 10 58 00 90"), 6)
+        # 鼠标右击发包
+        self.mem.write_short(0x00CDA984, 2)
+        time.sleep(0.1)
+        # 改回原地址
+        self.mem.write_bytes(0x005064BC, bytes.fromhex("8B 0D 18 A7 57 00"), 6)
+        print(content)

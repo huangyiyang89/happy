@@ -1,13 +1,39 @@
+# """test"""
 import struct
-import happy.core
-import happy.item
-cg = happy.core.Cg.open()
 
-items = happy.item.ItemCollection(cg.mem)
+# cg = happy.Cg.open()
 
-for item in items._items:
-    print(item.valid,item.index,item.name,item.count,item.type)
+# print(cg.player.name)
 
-cg.eat_food()
-#给自己使用第一格物品
-#cg._decode_send("jBdn 1j 1q 8 0 OO c")
+# for i in range(10):
+#     print(cg.player.skills[i].index,cg.player.skills[i].name)
+with open(r'C:\BlueCrossgate\map\0\1111.dat', 'rb') as file:
+    # 读取檔頭 (20字节)
+    header = file.read(20)
+
+    # 解析檔頭
+    magic_word, width_east, height_south = struct.unpack('3s9x2I', header)
+
+    # 检查魔术字是否为 'MAP'
+    if magic_word != b'MAP':
+        print("Invalid map file.")
+        exit()
+
+    # 读取地面數據
+    ground_data = file.read(width_east * height_south * 2)
+    
+    # 读取地上物件/建築物數據
+    object_data = file.read(width_east * height_south * 2)
+
+    # 读取地圖標誌
+    flag_data = file.read(width_east * height_south * 2)
+
+    # 解析地圖標誌數據
+    for i in range(1,height_south+1):
+        for j in range(1,width_east+1):
+            map_id = struct.unpack('H', ground_data[i*j * 2-2 : i*j* 2])
+            object_id = struct.unpack('H', object_data[i*j * 2-2 : i*j* 2])
+            flag = struct.unpack('H', flag_data[i*j * 2-2 : i*j* 2])
+            transition, obstacle = struct.unpack('BB', flag_data[i*j * 2-2 : i*j* 2])
+            if object_id[0]!=0 and object_id[0]!=2:
+                print(f"east: {j},south:{i},object_id: {object_id[0]}, Transition: {transition}, Obstacle: {obstacle},flag{flag[0]}")

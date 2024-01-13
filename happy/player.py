@@ -3,7 +3,8 @@ import time
 import happy.service
 import happy.unit
 import happy.skill
-import happy.item
+from happy.item import Item
+
 # typedef struct playerbase_s
 # {
 # 	short race;	//+0
@@ -23,7 +24,7 @@ import happy.item
 # 	int points_strength;//+124
 # 	int points_defense;//+128
 # 	int points_agility;//+132
-# 	int points_magical;//+136		
+# 	int points_magical;//+136
 # 	int manu_endurance;//+140
 # 	int manu_skillful;//+144
 # 	int manu_intelligence;//+148
@@ -77,6 +78,7 @@ import happy.item
 # 	item_info_t iteminfos[40];//+412 = itembase
 # }playerbase_t;
 
+
 class Player(happy.service.Service):
     """_summary_
 
@@ -113,6 +115,24 @@ class Player(happy.service.Service):
         return int(s[5:])
 
     @property
+    def hp_per(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return int(self.hp/self.hp_max*100)
+    
+    @property
+    def mp_per(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return int(self.mp/self.mp_max*100)
+
+    @property
     def mp(self):
         """_summary_
 
@@ -134,13 +154,13 @@ class Player(happy.service.Service):
 
     @property
     def position(self):
-        """_summary_
+        """战斗中的位置
 
         Returns:
             _type_: _description_
         """
         return self.mem.read_int(0x005989DC)
-    
+
     @property
     def is_enemy(self):
         """_summary_
@@ -166,7 +186,7 @@ class Player(happy.service.Service):
 
     @property
     def position_hex(self):
-        """_summary_
+        """战斗中的位置 16进制
 
         Returns:
             _type_: _description_
@@ -202,11 +222,11 @@ class Player(happy.service.Service):
             position = 0x29 if unit.is_enemy else 0x28
         self._execute_player_command(f"S|{skill.index:X}|{cast_level-1:X}|{position:X}")
 
-    def use_item(self,item:happy.item.Item,unit: happy.unit.Unit = None):
+    def use_battle_item(self, item: Item, unit: happy.unit.Unit = None):
         """使用物品"""
-        order = "I|"+hex(item.index)
+        order = "I|" + hex(item.index)
         if unit is not None:
-            order+="|"+unit.position_hex
+            order += "|" + unit.position_hex
         self._execute_player_command(order)
 
     def attack(self, unit: happy.unit.Unit):

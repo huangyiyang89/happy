@@ -80,14 +80,6 @@ class Pet(happy.unit.Unit):
         self.battle_flag = battle_flag
         self.skills = skills
 
-        # self.position_hex = data_list[0]
-
-        #     self.level = int(data_list[4], 16)
-        #     self.hp = int(data_list[5], 16)
-        #     self.hp_max = int(data_list[6], 16)
-        #     self.mp = int(data_list[7], 16)
-        #     self.mp_max = int(data_list[8], 16)
-
     @property
     def is_battle_state(self):
         """_summary_

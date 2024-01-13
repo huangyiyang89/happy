@@ -1,11 +1,8 @@
 "script"
 import random
-import happy.script
-import happy.core
+import happy
 
-
-
-class Script(happy.script.Script):
+class Script(happy.Script):
     """_summary_
 
     Args:
@@ -19,7 +16,7 @@ class Script(happy.script.Script):
         self.start_x = 0
         self.start_y = 0
 
-    def on_not_battle(self, cg: happy.core.Cg):
+    def on_not_battle(self, cg: happy.Cg):
         """_summary_
 
         Args:

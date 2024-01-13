@@ -1,40 +1,40 @@
-# C5C长度 3164
+"""Item"""
 import struct
 import happy.service
 import happy.mem
+from happy.util import b62
 
 
 class Item:
-    """z"""
-
-    # """ //[0] = hat
-    #     //[1] = cloth
-    #     //[2] = right hand
-    #     //[3] = left hand
-    #     //[4] = foot
-    #     //[5] = decoration 1
-    #     //[6] = decoration 2
-    #     //[7] = crystal
-    #     typedef struct item
-    #     {
-    #             short valid;
-    #             char name[46];
-    #             char attr[8][96];
-    #             char info[8][96];
-    #             int flags;//2=right clickable  1=kapian
-    #             int unk;
-    #             int image_id;
-    #             int level;
-    #             int item_id;
-    #             int count;
-    #             int type;
-    #             short double_clickable;
-    #             short unk2;
-    #             short unk3;
-    #             short assess_flags;
-    #             int assessed;//已鉴定
-    #             int unk6;
-    #     }"""
+    """C5C长度 3164
+    //[0] = hat
+    //[1] = cloth
+    //[2] = right hand
+    //[3] = left hand
+    //[4] = foot
+    //[5] = decoration 1
+    //[6] = decoration 2
+    //[7] = crystal
+    typedef struct item
+    {
+            short valid;
+            char name[46];
+            char attr[8][96];
+            char info[8][96];
+            int flags;//2=right clickable  1=kapian
+            int unk;
+            int image_id;
+            int level;
+            int item_id;
+            int count;
+            int type;
+            short double_clickable;
+            short unk2;
+            short unk3;
+            short assess_flags;
+            int assessed;//已鉴定
+            int unk6;
+    }"""
 
     def __init__(self, index, bytes_data: bytes) -> None:
         self._index = index
@@ -51,6 +51,15 @@ class Item:
             _type_: _description_
         """
         return self._index
+
+    @property
+    def index_62(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return b62(self._index)
 
     @property
     def valid(self):
@@ -88,7 +97,6 @@ class Item:
         """
         return self._type
 
-    
 
 class ItemCollection(happy.service.Service):
     """_summary_
@@ -139,4 +147,17 @@ class ItemCollection(happy.service.Service):
         """
         for item in self._items:
             if item.type == 51:
-               yield item
+                yield item
+
+    def put(self, item: Item, position: int):
+        """拿起item放到指定position
+
+        Args:
+            item1 (Item): _description_
+            position (int): _description_
+        """
+        self._decode_send(f"zo {item.index_62} {position} -1 ")
+
+    def tidyup(self):
+        """整理背包，直接调用游戏聊天框/r"""
+        self._decode_send("vYp 19 1k P|/r")

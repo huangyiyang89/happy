@@ -6,31 +6,33 @@ import time
 import importlib
 import importlib.util
 import sys
-import happy.mem
-import happy.service
+from typing import Literal
 import happy.unit
 import happy.player
 import happy.pet
 import happy.script
 import happy.map
-import happy.battle
-import happy.item
+from happy.mem import CgMem
+from happy.battle import Battle
+from happy.service import Service
+from happy.item import ItemCollection
+from happy.util import b62
 
 
-class Cg(happy.service.Service):
+class Cg(Service):
     """_summary_"""
 
     __opened_cg_processes = []
 
-    def __init__(self, mem: happy.mem.CgMem) -> None:
+    def __init__(self, mem: CgMem) -> None:
         super().__init__(mem)
         self._is_running = False
         self._thread = None
-        self.battle = happy.battle.Battle(mem)
+        self.battle = Battle(mem)
         self.player = happy.player.Player(mem)
         self.pets = happy.pet.PetCollection(mem)
         self.map = happy.map.Map(mem)
-        self.items = happy.item.ItemCollection(mem)
+        self.items = ItemCollection(mem)
         self._scripts = []
         self.is_closed = False
 
@@ -95,34 +97,6 @@ class Cg(happy.service.Service):
                 else:
                     script.on_not_battle(self)
 
-    @property
-    def is_fighting(self) -> bool:
-        """_summary_
-
-        Returns:
-            bool: _description_
-        """
-        return self.mem.read_short(0x0072B9D0) == 3
-
-    @property
-    def is_player_turn(self):
-        """人物行动时为1 宠物行动时为4 行动结束为5 登出以后再进游戏都为1"""
-        return self.mem.read_int(0x00598974) == 1
-
-    @property
-    def is_pet_turn(self):
-        """人物行动时为1 宠物行动时为4 行动结束为5 登出以后再进游戏都为1"""
-        return self.mem.read_int(0x00598974) == 4
-
-    @property
-    def is_player_second_turn(self):
-        """_summary_
-
-        Returns:
-            _type_: _description_
-        """
-        return self.mem.read_int(0x00598974) == 1 and self.mem.read_int(0x0059892C) == 1
-
     def go_to(self, x, y):
         """_summary_
 
@@ -146,10 +120,6 @@ class Cg(happy.service.Service):
         self.mem.write_int(0x00C0C2DC, 0)
         self.mem.write_bytes(0x0046845D, bytes.fromhex("A3 C8 C2 C0 00"), 5)
         self.mem.write_bytes(0x00468476, bytes.fromhex("89 0D C4 C2 C0 00"), 6)
-
-
-    
-
 
     def load_script(self, file_path, module_name, class_name, enable=False):
         """_summary_
@@ -182,41 +152,104 @@ class Cg(happy.service.Service):
             )
             return None
 
-    def _decode_send(self, content):
-        """发明文包"""
-        # 0057A718 缓存指针
-        # 00581000 空内存
-        # 使用空内存写入字符串
-        self.mem.write_string(0x00581000, content + "\0")
-        # 改写缓存地址
-        self.mem.write_bytes(0x005064BC, bytes.fromhex("B9 00 10 58 00 90"), 6)
-        # 鼠标右击发包
-        self.mem.write_short(0x00CDA984, 2)
-        time.sleep(0.1)
-        # 改回原地址
-        self.mem.write_bytes(0x005064BC, bytes.fromhex("8B 0D 18 A7 57 00"), 6)
-
     def eat_food(self):
-        """_summary_"""
-        next_food = next(self.items.foods, None)
-        if next_food is not None:
-            self._decode_send(
-                f"jBdn {self.base62_encode(self.map.x)} {self.base62_encode(self.map.y)} {self.base62_encode(next_food.index)} 0 OO c"
-            )
-        else:
-            print("nothing to eat")
+        """对玩家使用物品栏中第一个类型为料理的物品"""
+        if self.player.mp_max-self.player.mp>600:
+            first_food = next(self.items.foods, None)
+            if first_food is not None:
+                self._decode_send(
+                    f"jBdn {self.map.x_62} {self.map.y_62} {first_food.index_62} 0"
+                )
+            else:
+                print("nothing to eat")
 
+    def right_click(self, direction: Literal["A", "B", "C", "D", "E", "F", "G", "H"]):
+        """鼠标右键点击交互
 
-class CgException(Exception):
-    """_summary_
+        Args:
+            direction: A-H,顺时针表示左上,上,右上,右,右下,下,左下,左
+        """
+        self._decode_send(f"aG {self.map.x_62} {self.map.y_62} {direction} 0")
 
-    Args:
-        Exception (_type_): _description_
-    """
+    def tp(self):
+        """登出"""
+        self._decode_send("mU")
 
-    def __init__(self, code, message):
-        self.code = code
-        self.message = message
+    @property
+    def is_moving(self) -> bool:
+        """_summary_
 
-    def __str__(self):
-        return f"{self.code}: {self.message}"
+        Returns:
+            _type_: _description_
+        """
+        return self.mem.read_int(0x0054DCB0) != 65535
+
+    @property
+    def is_opening_dialog(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.get_dialog_type()!=4294967295
+
+    def get_dialog_type(self):
+        """没有对话窗口为FFFFFFFF=4294967295
+        医生窗口为2
+        卖东西为7
+        Returns:
+            _type_: _description_
+        """
+        return self.mem.read_int(0x005709B8)
+    
+    def get_npc_type(self):
+        """最近一次交互过的NPC类型
+        328普通护士 364资深护士 336医师
+        对话结束值不变，不能判断是正否在对话
+        Returns:
+            _type_: _description_
+        """
+        return self.mem.read_int(0x00C43900)
+    
+    def get_npc_id(self):
+        """最近一次交互过的NPC id
+        对话结束值不变，不能判断是正否在对话
+        Returns:
+            _type_: _description_
+        """
+        return self.mem.read_int(0x00C32AB0)
+
+    def call_nurse(self):
+        """打开对话窗口后三补
+        """
+        #对话id 医生编号
+        #yJ 9 w 5W 2Me 4 西医资深补宠
+        #yJ 8 x 5W 2Mf 4 东医资深
+        #yJ 8 v 5m 2LV 4 东医普通
+        #yJ 9 u 5m 2LW 4 西医普通
+
+        #yJ 9 w 5T 2Me 4 西医资深补蓝
+        #yJ 9 u 5j 2LW 4 西医普通补蓝
+
+        #yJ 9 w 5V 2Me 4 西医资深补血
+        #yJ 9 u 5l 2LW 4 西医普通补血
+        dialog_type = self.get_dialog_type()
+        
+        if dialog_type == 2:
+            npc_type = self.get_npc_type()
+            npc_id = self.get_npc_id()
+            x62 = self.map.x_62
+            y62 = self.map.y_62
+            npc_id_62=b62(npc_id)
+            if npc_type ==328:
+                if self.player.mp_per<100:
+                    self._decode_send(f"yJ {x62} {y62} 5j {npc_id_62} 4")
+                if self.player.hp_per<100:
+                    self._decode_send(f"yJ {x62} {y62} 5l {npc_id_62} 4")
+                self._decode_send(f"yJ {x62} {y62} 5m {npc_id_62} 4")
+            if npc_type ==364:
+                if self.player.mp_per<100:
+                    self._decode_send(f"yJ {x62} {y62} 5T {npc_id_62} 4")
+                if self.player.hp_per<100:
+                    self._decode_send(f"yJ {x62} {y62} 5V {npc_id_62} 4")
+                self._decode_send(f"yJ {x62} {y62} 5W {npc_id_62} 4")

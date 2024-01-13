@@ -1,5 +1,6 @@
 """Map"""
 from happy.mem import CgMem
+from happy.util import b62
 import happy.service
 
 
@@ -15,22 +16,38 @@ class Map(happy.service.Service):
 
     @property
     def x(self):
-        """在切换地图以后，坐标不会立即切换。
+        """
 
         Returns:
             _type_: _description_
         """
-        return self.mem.read_short(0x00BF6B54)
+        return int(self.mem.read_float(0x00BF6CE8)/64)
 
     @property
     def y(self):
-        """在切换地图以后，坐标不会立即切换。
+        """
 
         Returns:
             _type_: _description_
         """
-        return self.mem.read_short(0x00BF6C1C)
+        return int(self.mem.read_float(0x00BF6CE4)/64)
+    @property
+    def x_62(self):
+        """
 
+        Returns:
+            _type_: _description_
+        """
+        return b62(self.x)
+
+    @property
+    def y_62(self):
+        """
+
+        Returns:
+            _type_: _description_
+        """
+        return b62(self.y)
     @property
     def id(self):
         """地图ID

@@ -7,7 +7,6 @@ import happy.core
 import happy.script
 
 
-
 class App(customtkinter.CTk):
     """_summary_
 
@@ -17,35 +16,55 @@ class App(customtkinter.CTk):
 
     def __init__(self):
         super().__init__()
-        self.geometry("600x400")
-
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure((0, 1, 2), weight=1)
-        self.cgframes: list[Cgframe] = []
         self.title("HappyCG")
+        self.geometry("700x350")
+        self.grid_columnconfigure((0, 1, 2), weight=1)
+        self.grid_rowconfigure(0, weight=0)
+        self.grid_rowconfigure(1, weight=1)
+
+        for i in range(3):
+            label = customtkinter.CTkLabel(self, text="", width=200, height=0)
+            label.grid(row=0, column=i, sticky="nsew")
+
+        self.cgframes: list[Cgframe] = []
         self.refresh()
 
     def refresh(self):
         """_summary_"""
 
-        for frame in self.cgframes:
-            if frame.cg.is_closed:
-                frame.destroy()
-
         cg = happy.core.Cg.open()
+
         if cg:
+            self.remove_destroyed_frames()
             new_frame = Cgframe(self, cg)
             self.cgframes.append(new_frame)
-            count = len(self.cgframes)
-            for i in range(count):
+            self.grid_all_frames()
+            self.refresh()
+        else:
+            self.after(3000, self.refresh)
+
+    def remove_destroyed_frames(self):
+        """_summary_
+        """
+        count = len(self.cgframes)
+        for i in range(count-1,0,-1):
+            if not self.cgframes[i].winfo_exists():
+                self.cgframes.pop(i)
+
+    def grid_all_frames(self):
+        """_summary_
+        """
+        count = len(self.cgframes)
+        for i in range(0, count):
+            if self.cgframes[i].winfo_exists():
                 self.cgframes[i].grid(
-                    row=0,
+                    row=1,
                     column=i,
-                    padx=(30 - 15 * i, 0 + 15 * i),
-                    pady=20,
-                    sticky="nsew",
+                    stick="nsew",
+                    padx=(30 - i * 15 + 10, i * 15 + 10),
+                    pady=(0, 20),
                 )
-        self.after(1000, self.refresh)
+
 
 
 class Cgframe(customtkinter.CTkFrame):
@@ -56,16 +75,12 @@ class Cgframe(customtkinter.CTkFrame):
     """
 
     def __init__(self, master, cg: happy.core.Cg):
-        super().__init__(master)
+        super().__init__(master, width=200, height=200)
         self.cg = cg
-        # config grid
-        self.grid_rowconfigure([0, 1, 2, 3, 4, 5], weight=1)
-        self.grid_columnconfigure(0, weight=1)
 
         # lable control
         self.player_name_label = customtkinter.CTkLabel(self, text="")
-        self.player_name_label.grid(row=0, column=0)
-
+        self.player_name_label.pack()
         # load scripts
         self.scripts_directory = get_scripts_directory()
         self.load_script_names = get_all_py_files(self.scripts_directory)
@@ -79,14 +94,16 @@ class Cgframe(customtkinter.CTkFrame):
 
         self.switches = []
 
-        for index, script in enumerate(self.load_scripts):
+        for script in self.load_scripts:
             switch = customtkinter.CTkSwitch(
                 self,
                 text=script.name,
                 command=lambda script=script: self.switch_script_enable(script),
+                switch_width=50,
             )
+            switch.pack()
             self.switches.append(switch)
-            switch.grid(row=index + 1, column=0)
+
         self.refresh()
 
     def refresh(self):
@@ -94,10 +111,11 @@ class Cgframe(customtkinter.CTkFrame):
         try:
             self.cg.update()
             self.player_name_label.configure(text=self.cg.player.name)
-        except Exception as e: # pylint: disable=broad-except
-            print(e)
-        # 间隔1秒执行一次
-        self.after(100, self.refresh)
+            self.after(100, self.refresh)
+        except Exception as e:  # pylint: disable=broad-except
+            if "Could not read memory" in str(e):
+                self.destroy()
+                print(e, "Destroy This Frame")
 
     def switch_script_enable(self, script):
         """_summary_"""

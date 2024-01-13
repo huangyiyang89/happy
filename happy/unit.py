@@ -110,47 +110,6 @@ class UnitCollection(Service):
         super().__init__(mem)
         self.update()
 
-    @property
-    def player(self):
-        """_summary_
-
-        Returns:
-            _type_: _description_
-        """
-        player_position = self.mem.read_int(0x005989DC)
-        return self._units[player_position]
-
-    @property
-    def pet(self):
-        """_summary_
-
-        Returns:
-            _type_: _description_
-        """
-        player_position = self.mem.read_int(0x005989DC)
-        pet_position = (
-            player_position - 5 if player_position > 4 else player_position + 5
-        )
-        return self._units[pet_position]
-
-    @property
-    def friends(self):
-        """_summary_
-
-        Returns:
-            _type_: _description_
-        """
-        return [unit for unit in self._units[:10] if unit.exist]
-
-    @property
-    def enemies(self):
-        """_summary_
-
-        Returns:
-            _type_: _description_
-        """
-        return [unit for unit in self._units[10:] if unit.exist]
-
     def update(self):
         self._units = [Unit() for _ in range(20)]
         battle_units_buffer = self.mem.read_string(0x00590758, 1000)
@@ -161,6 +120,24 @@ class UnitCollection(Service):
             _unit = Unit(data_array[i : i + 12])
             self._units[_unit.position] = _unit
         return self
+
+    @property
+    def friends(self):
+        """只返回存在的单位
+
+        Returns:
+            _type_: _description_
+        """
+        return [unit for unit in self._units[:10] if unit.exist]
+
+    @property
+    def enemies(self):
+        """只返回存在的单位
+
+        Returns:
+            _type_: _description_
+        """
+        return [unit for unit in self._units[10:] if unit.exist]
 
     def get_lowest_hp_per_friend(self):
         """_summary_"""
@@ -173,12 +150,7 @@ class UnitCollection(Service):
             hp_lower_than_per (int, optional): _description_. Defaults to 75.
         """
 
-        def count_set_bits(n):
-            count = 0
-            while n:
-                count += n & 1
-                n >>= 1
-            return count
+
 
         # 强力位二进制表示
         crosses = [
@@ -201,18 +173,46 @@ class UnitCollection(Service):
                 # 单位如果血量符合条件则移位存入units_bit
                 units_bit += 1 << (9 - unit.position)
 
-        ret_pos = -1
+        ret_unit = None
+        for friend in self.friends:
+            count = UnitCollection.count_set_bits(units_bit & crosses[friend.position])
+            if count == 4:
+                return friend
+            if count == 3:
+                ret_unit = friend
+        return ret_unit
+
+    def get_cross_enemy(self):
+        """_summary_"""
+        # 强力位二进制表示
+        crosses = [
+            0b1110010000,
+            0b1101001000,
+            0b1010100100,
+            0b0101000010,
+            0b0010100001,
+            0b1000011100,
+            0b0100011010,
+            0b0010010101,
+            0b0001001010,
+            0b0000100101,
+        ]
+
+        # 场上存在符合条件的友方单位二进制表示是否存在
+        units_bit = 0
+        for unit in self.enemies:
+            # 单位如果血量符合条件则移位存入units_bit
+            units_bit += 1 << (9 - unit.position + 10)
+
         # 检查友方10个位置，返回单位存在且强力位符合条件的目标数大于3的位置，没有返回-1
-        for i in range(10):
-            if self._units[i].exist:
-                count = count_set_bits(units_bit & crosses[i])
-                if count == 4:
-                    return self._units[i]
-                if count == 3:
-                    ret_pos = i
-        if ret_pos > -1:
-            return self._units[ret_pos]
-        return None
+        ret_enemy = None
+        for enemy in self.enemies:
+            count = UnitCollection.count_set_bits(units_bit & crosses[enemy.position-10])
+            if count == 4:
+                return enemy
+            if count == 3:
+                ret_enemy = enemy
+        return ret_enemy
 
     def get_line_unit(self):
         """回力攻击位置
@@ -224,14 +224,14 @@ class UnitCollection(Service):
         back = 0
         back_target = None
         front_target = None
-        
+
         for enemy in self.enemies:
-            if enemy.position>14:
-                front+=1
-                front_target=enemy
+            if enemy.position > 14:
+                front += 1
+                front_target = enemy
             else:
-                back+=1
-                back_target=enemy
+                back += 1
+                back_target = enemy
         return back_target if back >= front else front_target
 
     def __getitem__(self, index):
@@ -247,3 +247,19 @@ class UnitCollection(Service):
             _type_: _description_
         """
         return random.choice(self.enemies)
+    
+    @staticmethod
+    def count_set_bits(n):
+        """计算二进制数中有多少个1
+
+        Args:
+            n (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        count = 0
+        while n:
+            count += n & 1
+            n >>= 1
+        return count

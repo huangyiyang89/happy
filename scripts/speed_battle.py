@@ -1,6 +1,6 @@
 "script"
 import happy.script
-import happy.core
+import happy
 
 
 class Script(happy.script.Script):
@@ -16,6 +16,6 @@ class Script(happy.script.Script):
         self.speed = 100
 
 
-    def on_battle(self, cg: happy.core.Cg):
+    def on_battle(self, cg: happy.Cg):
         t0 = cg.mem.read_double(0x0072B9D8)
         cg.mem.write_double(0x0072B9D8, t0 - self.speed)

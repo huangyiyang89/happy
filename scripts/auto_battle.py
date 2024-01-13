@@ -1,10 +1,9 @@
 "script"
 import time
-import happy.script
-import happy.core
+import happy
 
 
-class Script(happy.script.Script):
+class Script(happy.Script):
     """_summary_
 
     Args:
@@ -19,14 +18,14 @@ class Script(happy.script.Script):
         self.force_use_first_skill = False
         self.try_to_eat = False
 
-    def on_update(self, cg: happy.core.Cg):
+    def on_update(self, cg: happy.Cg):
         """_summary_
 
         Args:
             cg (happy.core.Cg): _description_
         """
 
-    def on_battle(self, cg: happy.core.Cg):
+    def on_battle(self, cg: happy.Cg):
         """_summary_
 
         Args:
@@ -37,7 +36,7 @@ class Script(happy.script.Script):
 
         self.try_to_eat = False
 
-    def on_player_turn(self, cg: happy.core.Cg):
+    def on_player_turn(self, cg: happy.Cg):
         """_summary_
 
         Args:
@@ -45,7 +44,7 @@ class Script(happy.script.Script):
         """
         a = cg.mem.read_int(0x005988AC)
         b = cg.mem.read_int(0x00598940)
-        
+
         if a == 0 and b == 0:
             self.strategy.player_action(cg)
         else:
@@ -55,9 +54,7 @@ class Script(happy.script.Script):
                 time.sleep(1)
                 self.strategy.player_action(cg)
 
-
-
-    def on_pet_turn(self, cg: happy.core.Cg):
+    def on_pet_turn(self, cg: happy.Cg):
         """_summary_
 
         Args:
@@ -65,19 +62,20 @@ class Script(happy.script.Script):
         """
         self.strategy.pet_action(cg)
 
-    def on_not_battle(self, cg: happy.core.Cg):
-        if self.try_to_eat:
+    def on_not_battle(self, cg: happy.Cg):
+        if not self.try_to_eat:
             cg.eat_food()
-        self.try_to_eat =True
+        self.try_to_eat = True
+
 
 class Strategy:
     """_summary_"""
 
-    def __init__(self, cg: happy.core.Cg) -> None:
+    def __init__(self, cg: happy.Cg) -> None:
         self.job_name = cg.player.job_name
 
     @staticmethod
-    def get_strategy(cg: happy.core.Cg):
+    def get_strategy(cg: happy.Cg):
         """_summary_
 
         Args:
@@ -91,7 +89,7 @@ class Strategy:
             return ChuanJiao(cg)
         return Strategy(cg)
 
-    def player_action(self, cg: happy.core.Cg):
+    def player_action(self, cg: happy.Cg):
         """_summary_
 
         Args:
@@ -100,7 +98,7 @@ class Strategy:
         enemies_count = len(cg.battle.units.enemies)
         target = cg.battle.units.get_random_enemy()
         skill = cg.player.skills.get_aoe_skill()
-        
+
         if (
             enemies_count > 2
             and skill is not None
@@ -112,7 +110,7 @@ class Strategy:
         else:
             cg.player.attack(target)
 
-    def pet_action(self, cg: happy.core.Cg):
+    def pet_action(self, cg: happy.Cg):
         """_summary_
 
         Args:
@@ -138,7 +136,7 @@ class ChuanJiao(Strategy):
         Strategy (_type_): _description_
     """
 
-    def player_action(self, cg: happy.core.Cg):
+    def player_action(self, cg: happy.Cg):
         low_hp_friends_count = sum(
             1 for friend in cg.battle.units.friends if friend.hp_per <= 75
         )
