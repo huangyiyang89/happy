@@ -15,7 +15,7 @@ import happy.map
 from happy.mem import CgMem
 from happy.battle import Battle
 from happy.service import Service
-from happy.item import ItemCollection
+from happy.item import Item, ItemCollection
 from happy.util import b62
 
 
@@ -152,16 +152,26 @@ class Cg(Service):
             )
             return None
 
-    def eat_food(self):
+    def eat_food(self, lose_mp=600, excepts="魅惑的哈密瓜麵包"):
         """对玩家使用物品栏中第一个类型为料理的物品"""
-        if self.player.mp_max-self.player.mp>600:
-            first_food = next(self.items.foods, None)
+        if self.player.mp_max - self.player.mp >= lose_mp:
+            first_food = next(
+                (food for food in self.items.foods if food.name not in excepts), None
+            )
             if first_food is not None:
                 self._decode_send(
-                    f"jBdn {self.map.x_62} {self.map.y_62} {first_food.index_62} 0"
+                    f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} 0"
                 )
             else:
                 print("nothing to eat")
+
+    def use_item(self, item: Item):
+        """_summary_
+
+        Args:
+            item (Item): _description_
+        """
+        self._decode_send(f"Ak {self.map.x_62} {self.map.y_62} {item.index_62} 0")
 
     def right_click(self, direction: Literal["A", "B", "C", "D", "E", "F", "G", "H"]):
         """鼠标右键点击交互
@@ -169,7 +179,7 @@ class Cg(Service):
         Args:
             direction: A-H,顺时针表示左上,上,右上,右,右下,下,左下,左
         """
-        self._decode_send(f"aG {self.map.x_62} {self.map.y_62} {direction} 0")
+        self._decode_send(f"zA {self.map.x_62} {self.map.y_62} {direction} 0")
 
     def tp(self):
         """登出"""
@@ -191,7 +201,7 @@ class Cg(Service):
         Returns:
             _type_: _description_
         """
-        return self.get_dialog_type()!=4294967295
+        return self.get_dialog_type() != 4294967295
 
     def get_dialog_type(self):
         """没有对话窗口为FFFFFFFF=4294967295
@@ -201,7 +211,7 @@ class Cg(Service):
             _type_: _description_
         """
         return self.mem.read_int(0x005709B8)
-    
+
     def get_npc_type(self):
         """最近一次交互过的NPC类型
         328普通护士 364资深护士 336医师
@@ -210,7 +220,7 @@ class Cg(Service):
             _type_: _description_
         """
         return self.mem.read_int(0x00C43900)
-    
+
     def get_npc_id(self):
         """最近一次交互过的NPC id
         对话结束值不变，不能判断是正否在对话
@@ -220,36 +230,34 @@ class Cg(Service):
         return self.mem.read_int(0x00C32AB0)
 
     def call_nurse(self):
-        """打开对话窗口后三补
-        """
-        #对话id 医生编号
-        #yJ 9 w 5W 2Me 4 西医资深补宠
-        #yJ 8 x 5W 2Mf 4 东医资深
-        #yJ 8 v 5m 2LV 4 东医普通
-        #yJ 9 u 5m 2LW 4 西医普通
+        """打开对话窗口后三补"""
+        # 对话id 医生编号
+        # yJ 9 w 5W 2Me 4 西医资深补宠
+        # yJ 8 x 5W 2Mf 4 东医资深
+        # yJ 8 v 5m 2LV 4 东医普通
+        # yJ 9 u 5m 2LW 4 西医普通
 
-        #yJ 9 w 5T 2Me 4 西医资深补蓝
-        #yJ 9 u 5j 2LW 4 西医普通补蓝
+        # yJ 9 w 5T 2Me 4 西医资深补蓝
+        # yJ 9 u 5j 2LW 4 西医普通补蓝
 
-        #yJ 9 w 5V 2Me 4 西医资深补血
-        #yJ 9 u 5l 2LW 4 西医普通补血
+        # yJ 9 w 5V 2Me 4 西医资深补血
+        # yJ 9 u 5l 2LW 4 西医普通补血
         dialog_type = self.get_dialog_type()
-        
         if dialog_type == 2:
             npc_type = self.get_npc_type()
             npc_id = self.get_npc_id()
             x62 = self.map.x_62
             y62 = self.map.y_62
-            npc_id_62=b62(npc_id)
-            if npc_type ==328:
-                if self.player.mp_per<100:
-                    self._decode_send(f"yJ {x62} {y62} 5j {npc_id_62} 4")
-                if self.player.hp_per<100:
-                    self._decode_send(f"yJ {x62} {y62} 5l {npc_id_62} 4")
-                self._decode_send(f"yJ {x62} {y62} 5m {npc_id_62} 4")
-            if npc_type ==364:
-                if self.player.mp_per<100:
-                    self._decode_send(f"yJ {x62} {y62} 5T {npc_id_62} 4")
-                if self.player.hp_per<100:
-                    self._decode_send(f"yJ {x62} {y62} 5V {npc_id_62} 4")
-                self._decode_send(f"yJ {x62} {y62} 5W {npc_id_62} 4")
+            npc_id_62 = b62(npc_id)
+            if npc_type == 328:
+                if self.player.mp_per < 100:
+                    self._decode_send(f"xD {x62} {y62} 5j {npc_id_62} 4")
+                if self.player.hp_per < 100:
+                    self._decode_send(f"xD {x62} {y62} 5l {npc_id_62} 4")
+                self._decode_send(f"xD {x62} {y62} 5m {npc_id_62} 4")
+            if npc_type == 364:
+                if self.player.mp_per < 100:
+                    self._decode_send(f"xD {x62} {y62} 5T {npc_id_62} 4")
+                if self.player.hp_per < 100:
+                    self._decode_send(f"xD {x62} {y62} 5V {npc_id_62} 4")
+                self._decode_send(f"xD {x62} {y62} 5W {npc_id_62} 4")
