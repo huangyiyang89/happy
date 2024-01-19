@@ -145,16 +145,16 @@ class BattlePet(Service, Pet):
                 position = 0x29 if unit.is_enemy else 0x28
             self._execute_pet_command(f"W|{skill.index:X}|{position:X}")
         else:
-            self.attack(position)
+            self.attack(unit)
 
-    def attack(self, unit):
+    def attack(self, unit: happy.unit.Unit):
         """_summary_
 
         Args:
             unit (_type_): _description_
         """
         skill = self.get_skill("攻擊")
-        self._execute_pet_command(f"W|{skill.index:X}|{unit.position_hex}")
+        self._execute_pet_command(f"W|{skill.index:X}|{unit.position:X}")
 
     @property
     def hp(self):

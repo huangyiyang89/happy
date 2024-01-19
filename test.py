@@ -6,10 +6,11 @@ cg = happy.Cg.open()
 #cg.decode_export()
 #cg.start_print_packet(True)
 #00508C26
-cg._decode_send("IPy q")
+skill = cg.pets.battle_pet.get_skill("攻擊")
+print(skill.name)
 #cg._decode_send("Ivfo q")
-time.sleep(8)
-cg._decode_send("sM 0 0 -1 912|8|9|10|11|12")
+#time.sleep(8)
+#cg._decode_send("sM 0 0 -1 912|8|9|10|11|12")
 
 # with open(r'C:\BlueCrossgate\map\1\3\148.dat', 'rb') as file:
 #     # 读取檔頭 (20字节)
