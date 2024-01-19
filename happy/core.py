@@ -167,6 +167,21 @@ class Cg(Service):
             else:
                 print("nothing to eat")
 
+    def eat_drug(self, lose_hp=400, excepts=""):
+        """对玩家使用物品栏中第一个类型为药的物品"""
+        if self.player.hp_max - self.player.hp >= lose_hp:
+            first_drug = next(
+                (drug for drug in self.items.drugs if drug.name not in excepts), None
+            )
+            if first_drug is not None:
+                self.use_item(first_drug)
+                self.select_target()
+                self._decode_send(
+                    f"iVfo {self.map.x_62} {self.map.y_62} {first_drug.index_62} 0"
+                )
+            else:
+                print("nothing to eat")
+
     def use_item(self, item: Item):
         """_summary_
 
@@ -175,10 +190,8 @@ class Cg(Service):
         """
         self._decode_send(f"Ak {self.map.x_62} {self.map.y_62} {item.index_62} 0")
 
-
     def select_target(self):
-        """_summary_
-        """
+        """_summary_"""
         self._decode_send("mjCv 0")
 
     def right_click(self, direction: Literal["A", "B", "C", "D", "E", "F", "G", "H"]):
@@ -257,24 +270,32 @@ class Cg(Service):
             x62 = self.map.x_62
             y62 = self.map.y_62
             npc_id_62 = b62(npc_id)
-            
+
             if npc_type == 328:
                 if self.player.mp_per < 100:
                     self._decode_send(f"xD {x62} {y62} 5j {npc_id_62} 4")
                 if self.player.hp_per < 100:
                     self._decode_send(f"xD {x62} {y62} 5l {npc_id_62} 4")
-                if self.pets.battle_pet is not None and (self.pets.battle_pet.hp_per+self.pets.battle_pet.mp_per)<200:
+                if (
+                    self.pets.battle_pet is not None
+                    and (self.pets.battle_pet.hp_per + self.pets.battle_pet.mp_per)
+                    < 200
+                ):
                     self._decode_send(f"xD {x62} {y62} 5m {npc_id_62} 4")
             if npc_type == 364:
                 if self.player.mp_per < 100:
                     self._decode_send(f"xD {x62} {y62} 5T {npc_id_62} 4")
                 if self.player.hp_per < 100:
                     self._decode_send(f"xD {x62} {y62} 5V {npc_id_62} 4")
-                if self.pets.battle_pet is not None and (self.pets.battle_pet.hp_per+self.pets.battle_pet.mp_per)<200:
+                if (
+                    self.pets.battle_pet is not None
+                    and (self.pets.battle_pet.hp_per + self.pets.battle_pet.mp_per)
+                    < 200
+                ):
                     self._decode_send(f"xD {x62} {y62} 5W {npc_id_62} 4")
 
-    def cook(self,recipe):
-        #klF x y a
-        #call 00507D70
+    def cook(self, recipe):
+        # klF x y a
+        # call 00507D70
         index = self.player.skills.get_skill("料理").index
         self._decode_send(f"sR {index} 0 -1 912|8|9|10|11|12")
