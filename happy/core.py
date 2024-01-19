@@ -159,6 +159,8 @@ class Cg(Service):
                 (food for food in self.items.foods if food.name not in excepts), None
             )
             if first_food is not None:
+                self.use_item(first_food)
+                self.select_target()
                 self._decode_send(
                     f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} 0"
                 )
@@ -172,6 +174,12 @@ class Cg(Service):
             item (Item): _description_
         """
         self._decode_send(f"Ak {self.map.x_62} {self.map.y_62} {item.index_62} 0")
+
+
+    def select_target(self):
+        """_summary_
+        """
+        self._decode_send("mjCv 0")
 
     def right_click(self, direction: Literal["A", "B", "C", "D", "E", "F", "G", "H"]):
         """鼠标右键点击交互
@@ -249,15 +257,24 @@ class Cg(Service):
             x62 = self.map.x_62
             y62 = self.map.y_62
             npc_id_62 = b62(npc_id)
+            
             if npc_type == 328:
                 if self.player.mp_per < 100:
                     self._decode_send(f"xD {x62} {y62} 5j {npc_id_62} 4")
                 if self.player.hp_per < 100:
                     self._decode_send(f"xD {x62} {y62} 5l {npc_id_62} 4")
-                self._decode_send(f"xD {x62} {y62} 5m {npc_id_62} 4")
+                if self.pets.battle_pet is not None and (self.pets.battle_pet.hp_per+self.pets.battle_pet.mp_per)<200:
+                    self._decode_send(f"xD {x62} {y62} 5m {npc_id_62} 4")
             if npc_type == 364:
                 if self.player.mp_per < 100:
                     self._decode_send(f"xD {x62} {y62} 5T {npc_id_62} 4")
                 if self.player.hp_per < 100:
                     self._decode_send(f"xD {x62} {y62} 5V {npc_id_62} 4")
-                self._decode_send(f"xD {x62} {y62} 5W {npc_id_62} 4")
+                if self.pets.battle_pet is not None and (self.pets.battle_pet.hp_per+self.pets.battle_pet.mp_per)<200:
+                    self._decode_send(f"xD {x62} {y62} 5W {npc_id_62} 4")
+
+    def cook(self,recipe):
+        #klF x y a
+        #call 00507D70
+        index = self.player.skills.get_skill("料理").index
+        self._decode_send(f"sR {index} 0 -1 912|8|9|10|11|12")

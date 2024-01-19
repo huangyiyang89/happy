@@ -138,7 +138,7 @@ class BattlePet(Service, Pet):
             unit (happy.unit.Unit): _description_
         """
         position = unit.position
-        if self.mp>skill.cost:
+        if self.mp>=skill.cost:
             if "強力" in skill.name:
                 position = position + 0x14
             if "超強" in skill.name:

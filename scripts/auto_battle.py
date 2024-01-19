@@ -66,6 +66,7 @@ class Script(happy.Script):
         if not self.try_to_eat:
             cg.eat_food()
         self.try_to_eat = True
+        cg.call_nurse()
 
 
 class Strategy:
