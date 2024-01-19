@@ -105,7 +105,7 @@ class Strategy:
             and skill is not None
             and cg.player.mp >= skill.max_level_cost
         ):
-            if "因果報應" in skill.name:
+            if "因果報應" or "精神衝擊波" in skill.name:
                 target = cg.battle.units.get_line_unit()
             cg.player.cast(skill, target, skill.get_efficient_level(enemies_count))
         else:
@@ -122,7 +122,7 @@ class Strategy:
         heal_skill = pet.get_skill("吸血", "明鏡止水")
         guard_counter = pet.get_skill("崩擊")
         enemies_count = len(cg.battle.units.enemies)
-        if enemies_count < 6 and guard_counter is not None:
+        if enemies_count < 4 and guard_counter is not None:
             pet.cast(guard_counter, target)
         elif pet.hp_per <= 70 and heal_skill is not None:
             pet.cast(heal_skill, target)

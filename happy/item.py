@@ -156,8 +156,8 @@ class ItemCollection(happy.service.Service):
             item1 (Item): _description_
             position (int): _description_
         """
-        self._decode_send(f"zo {item.index_62} {position} -1 ")
+        self._decode_send(f"yi {item.index_62} {position} -1 ")
 
     def tidyup(self):
         """整理背包，直接调用游戏聊天框/r"""
-        self._decode_send("vYp 19 1k P|/r")
+        self._decode_send("uSr 19 1k P|/r")
