@@ -17,12 +17,13 @@ from happy.battle import Battle
 from happy.service import Service
 from happy.item import Item, ItemCollection
 from happy.util import b62
+import happy.pywinhandle
 
 
 class Cg(Service):
     """_summary_"""
 
-    __opened_cg_processes = []
+    opened_cg_processes = []
 
     def __init__(self, mem: CgMem) -> None:
         super().__init__(mem)
@@ -42,12 +43,13 @@ class Cg(Service):
         Returns:
             _type_: HappyCG
         """
-        processes = happy.mem.CgMem.list_cg_processes()
+        processes = CgMem.list_cg_processes()
         for process in processes:
-            if process not in Cg.__opened_cg_processes:
-                mem = happy.mem.CgMem(process)
+            if process not in Cg.opened_cg_processes:
+                mem = CgMem(process)
                 new_cg = Cg(mem)
-                Cg.__opened_cg_processes.append(process)
+                Cg.opened_cg_processes.append(process)
+                new_cg.update()
                 return new_cg
         return None
 
@@ -72,7 +74,7 @@ class Cg(Service):
         """close not used yet"""
         if self._is_running:
             self._is_running = False
-        Cg.__opened_cg_processes.remove(self.mem.process_id)
+        Cg.opened_cg_processes.remove(self.mem.process_id)
         self.is_closed = True
 
     def update(self):
@@ -82,6 +84,7 @@ class Cg(Service):
         self.player.update()
         self.pets.update()
         self.items.update()
+        self.map.update()
 
         for script in self._scripts:
             if script.enable:
@@ -121,6 +124,49 @@ class Cg(Service):
         self.mem.write_bytes(0x0046845D, bytes.fromhex("A3 C8 C2 C0 00"), 5)
         self.mem.write_bytes(0x00468476, bytes.fromhex("89 0D C4 C2 C0 00"), 6)
 
+    def go_if(self, x1, y1, x2, y2, x3=None, y3=None, map_id=None):
+        """_summary_
+
+        Args:
+            x1 (_type_): _description_
+            y1 (_type_): _description_
+            x2 (_type_): _description_
+            y2 (_type_): _description_
+            x3 (_type_, optional): _description_. Defaults to None.
+            y3 (_type_, optional): _description_. Defaults to None.
+            map_id (_type_, optional): _description_. Defaults to None.
+        """
+        if map_id is not None:
+            if self.map.id != map_id:
+                return
+        if (x1 <= self.map.x <= x2 or x2 <= self.map.x <= x1) and (
+            y1 <= self.map.y <= y2 or y2 <= self.map.y <= y1
+        ):
+            if self.map.x == x2 and self.map.y == y2:
+                return
+            if (
+                x3 is not None
+                and y3 is not None
+                and self.map.x != x3
+                and self.map.y != y3
+            ):
+                self.go_to(x3, y3)
+            else:
+                self.go_to(x2, y2)
+
+    def go_astar(self, x, y):
+        """_summary_
+
+        Args:
+            x (_type_): _description_
+            y (_type_): _description_
+        """
+        path = self.map.astar(x, y)
+        if path and len(path) > 1:
+            self.go_to(*path[1])
+        else:
+            self.map.read_data()
+
     def load_script(self, file_path, module_name, class_name, enable=False):
         """_summary_
 
@@ -154,18 +200,23 @@ class Cg(Service):
 
     def eat_food(self, lose_mp=600, excepts="魅惑的哈密瓜麵包"):
         """对玩家使用物品栏中第一个类型为料理的物品"""
-        if self.player.mp_max - self.player.mp >= lose_mp:
-            first_food = next(
-                (food for food in self.items.foods if food.name not in excepts), None
-            )
-            if first_food is not None:
-                self.use_item(first_food)
-                self.select_target()
+        
+        first_food = next(
+            (food for food in self.items.foods if food.name not in excepts), None
+        )
+        if first_food is not None:
+            self.use_item(first_food)
+            self.select_target()
+            if self.player.mp_max - self.player.mp >= lose_mp:
                 self._decode_send(
                     f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} 0"
                 )
-            else:
-                print("nothing to eat")
+            if self.pets.battle_pet.mp_max - self.pets.battle_pet.mp>=lose_mp and self.pets.battle_pet.has_power_magic_skill():
+                self._decode_send(
+                    f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} 1"
+                )
+        else:
+            print("nothing to eat")
 
     def eat_drug(self, lose_hp=400, excepts=""):
         """对玩家使用物品栏中第一个类型为药的物品"""
@@ -204,7 +255,7 @@ class Cg(Service):
 
     def tp(self):
         """登出"""
-        self._decode_send("mU")
+        self._decode_send("lO")
 
     @property
     def is_moving(self) -> bool:
@@ -294,8 +345,50 @@ class Cg(Service):
                 ):
                     self._decode_send(f"xD {x62} {y62} 5W {npc_id_62} 4")
 
-    def cook(self, recipe):
-        # klF x y a
-        # call 00507D70
-        index = self.player.skills.get_skill("料理").index
-        self._decode_send(f"sR {index} 0 -1 912|8|9|10|11|12")
+    def _stop_random_key(self):
+        self.mem.write_bytes(0x00530CA3, bytes.fromhex("90 90 90 90 90"), 5)
+        self.mem.write_bytes(0x00530CB9, bytes.fromhex("90 90 90 90 90"), 5)
+        self.mem.write_int(0x0057E998, 2)
+
+    def produce(self, craft_id=0, craft_name=""):
+        """根据生产的物品名称或id生产
+
+        Args:
+            craft_id (int, optional): 寿喜锅 912. Defaults to 0.
+            craft_name (str, optional): _description_. Defaults to "".
+        """
+        self._stop_random_key()
+
+        craft: PlayerSkillCraft = self.player.skills.find_craft(craft_id, craft_name)
+        if craft is None:
+            print("未找到要生产的技能")
+            return False
+        if craft.cost > self.player.mp:
+            print("mp不足")
+            return False
+
+        items_str = ""
+        for ingredient in craft.ingredients:
+            item = self.items.find(ingredient.itemid, ingredient.name, ingredient.count)
+            if item is None:
+                box = self.items.find_box(ingredient.name)
+                if box:
+                    self.use_item(box)
+                    return True
+                print("材料用尽。")
+                return False
+            items_str = "|" + str(item.index) + items_str
+
+        send_content = f"sM {craft.skill.index} 0 -1 {craft.id}" + items_str
+        self._decode_send("Ivfo q")
+        time.sleep(14)
+        self._decode_send(send_content)
+        return True
+
+    @staticmethod
+    def close_handles():
+        """_summary_
+        """
+        process_ids=list(CgMem.list_cg_processes())
+        handles = happy.pywinhandle.find_handles(process_ids, ['汢敵'])
+        happy.pywinhandle.close_handles(handles)

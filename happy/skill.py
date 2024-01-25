@@ -4,15 +4,7 @@ from happy.mem import CgMem
 from happy.service import Service
 
 
-class Skill:
-    """name,index"""
-
-    def __init__(self, index, name) -> None:
-        self.index = index
-        self.name = name
-
-
-class PlayerSkill(Skill):
+class PlayerSkill(Service):
     """_summary_
 
     Args:
@@ -20,10 +12,23 @@ class PlayerSkill(Skill):
         Skill (_type_): _description_
     """
 
-    def __init__(self, index, name, level, max_level_cost) -> None:
-        super().__init__(index, name)
-        self.level = level
+    offset = 0x00E8D6EC
+    size = 0x4C4C
+
+    def __init__(self, index, name, level, max_level_cost, mem: CgMem) -> None:
+        Service.__init__(self, mem)
+        self.index = index
         self.max_level_cost = max_level_cost
+
+        self.address = PlayerSkill.offset + index * PlayerSkill.size
+
+        self._crafts = []
+        for i in range(50):
+            craft = PlayerSkillCraft(self,i)
+            if craft.name != '':
+                self.crafts.append(craft)
+            else:
+                break
 
     def get_efficient_level(self, enemies_count):
         """_summary_
@@ -40,6 +45,178 @@ class PlayerSkill(Skill):
             return enemies_count + 2
         return self.level
 
+    def find_craft(self, craft_id=0, craft_name=""):
+        """_summary_
+
+        Args:
+            id (int, optional): _description_. Defaults to 0.
+            name (int, optional): _description_. Defaults to 0.
+
+        Returns:
+            _type_: _description_
+        """
+        for craft in self.crafts:
+            if craft.id == craft_id or craft.name == craft_name:
+                return craft
+        return None
+
+    @property
+    def name(self):
+        return self.mem.read_string(self.address)
+
+    @property
+    def slot_size(self):
+        return self.mem.read_bytes(self.address + 25, 1)
+
+    @property
+    def padding(self):
+        return self.mem.read_bytes(self.address + 26, 2)
+
+    @property
+    def level(self):
+        return self.mem.read_int(self.address + 28)
+
+    @property
+    def max_level(self):
+        return self.mem.read_int(self.address + 32)
+
+    @property
+    def exp(self):
+        return self.mem.read_int(self.address + 36)
+
+    @property
+    def max_exp(self):
+        return self.mem.read_int(self.address + 40)
+
+    @property
+    def type(self):
+        return self.mem.read_int(self.address + 44)
+
+    @property
+    def id(self):
+        return self.mem.read_int(self.address + 48)
+
+    @property
+    def unknown(self):
+        return self.mem.read_int(self.address + 52)
+
+    @property
+    def pos(self):
+        return self.mem.read_int(self.address + 56)
+
+
+    @property
+    def crafts(self)->list['PlayerSkillCraft']:
+        return self._crafts
+
+class PlayerSkillCraft(Service):
+    offset = 0x8E8
+    size = 0x134
+
+    def __init__(self, skill: PlayerSkill, index: int) -> None:
+        super().__init__(skill.mem)
+        self._skill = skill
+        self._index = index
+        self.address = (
+            skill.address + PlayerSkillCraft.offset + index * PlayerSkillCraft.size
+        )
+        self._ingredients = []
+        for i in range(5):
+            ingredient = CraftIngredients(self, i)
+            if ingredient.itemid != -1:
+                self._ingredients.append(ingredient)
+            else:
+                break
+    
+    @property
+    def skill(self):
+        return self._skill
+
+    @property
+    def index(self):
+        return self._index
+
+    @property
+    def id(self):
+        return self.mem.read_int(self.address)
+
+    @property
+    def cost(self):
+        return self.mem.read_int(self.address + 4)
+
+    @property
+    def level(self):
+        return self.mem.read_int(self.address + 8)
+
+    @property
+    def available(self):
+        return self.mem.read_int(self.address + 12)
+
+    @property
+    def itemid(self):
+        return self.mem.read_int(self.address + 16)
+
+    @property
+    def name(self):
+        return self.mem.read_string(self.address + 20)
+
+    @property
+    def info(self):
+        return self.mem.read_string(self.address + 49)
+
+    @property
+    def ingredients(self)->list['CraftIngredients']:
+        return self._ingredients
+
+    
+
+class CraftIngredients(Service):
+    """制作所需材料
+
+    Args:
+        Service (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+
+    offset = 108
+    size = 40
+
+    def __init__(self, craft: PlayerSkillCraft, index) -> None:
+        super().__init__(craft.mem)
+        self.index = index
+        self.address = (
+            craft.address + CraftIngredients.offset + index * CraftIngredients.size
+        )
+
+    @property
+    def itemid(self):
+        """=-1 if none
+
+        Returns:
+            _type_: _description_
+        """
+        return self.mem.read_int(self.address)
+
+    @property
+    def count(self):
+        """=-1 if none
+
+        Returns:
+            _type_: _description_
+        """
+        return self.mem.read_int(self.address + 4)
+
+    @property
+    def name(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.mem.read_string(self.address + 8)
+
 
 class PlayerSkillCollection(Service):
     """_summary_
@@ -53,7 +230,7 @@ class PlayerSkillCollection(Service):
         self.update()
 
     def update(self):
-        self._skills = [None] * 15
+        self._skills:list[PlayerSkill] = [None] * 15
         for i in range(0, 14):
             name = self.mem.read_string(0x00E8D6EC + 0x4C4C * i)
             level = self.mem.read_int(0x00E8D708 + 0x4C4C * i)
@@ -62,7 +239,7 @@ class PlayerSkillCollection(Service):
                 max_level_cost = self.mem.read_int(
                     0x00E8D6EC + 0x4C4C * i + 0xB8 + 0x94 * (level - 1)
                 )
-                skill = PlayerSkill(i, name, level, max_level_cost)
+                skill = PlayerSkill(i, name, level, max_level_cost, self.mem)
                 self._skills[customized_position] = skill
 
         self._skills = [skill for skill in self._skills if skill is not None]
@@ -100,6 +277,8 @@ class PlayerSkillCollection(Service):
                 "刀刃亂舞",
                 "因果報應",
                 "追月",
+                "月影",
+                "精神衝擊波",
                 "超強隕石魔法",
                 "超強冰凍魔法",
                 "超強火焰魔法",
@@ -108,8 +287,23 @@ class PlayerSkillCollection(Service):
                 return skill
         return None
 
+    def find_craft(self,craft_id=0,craft_name=""):
+        """_summary_
 
-class PetSkill(Skill):
+        Args:
+            craft_id (_type_): _description_
+            craft_name (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        for skill in self._skills:
+            craft = skill.find_craft(craft_id,craft_name)
+            if craft:
+                return craft
+        return None
+
+class PetSkill:
     """_summary_
 
     Args:
@@ -117,5 +311,6 @@ class PetSkill(Skill):
     """
 
     def __init__(self, index, name, cost) -> None:
-        super().__init__(index, name)
+        self.index = index
+        self.name = name
         self.cost = cost

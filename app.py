@@ -2,6 +2,7 @@
 import os
 import sys
 import glob
+import traceback
 import customtkinter
 import happy.core
 import happy.script
@@ -116,6 +117,9 @@ class Cgframe(customtkinter.CTkFrame):
             if "Could not read memory" in str(e):
                 self.destroy()
                 print(e, "Destroy This Frame")
+            else :
+                print(e)
+                traceback.print_exc()
 
     def switch_script_enable(self, script):
         """_summary_"""

@@ -1,5 +1,6 @@
 """Item"""
 import struct
+from typing import Iterator
 import happy.service
 import happy.mem
 from happy.util import b62
@@ -39,7 +40,10 @@ class Item:
     def __init__(self, index, bytes_data: bytes) -> None:
         self._index = index
         self._valid = struct.unpack("H", bytes_data[:2])[0]
-        self._name = bytes_data[2:48].decode("big5", errors="ignore")
+        self._name = bytes(filter(lambda x: x != 0x00, bytes_data[2:48])).decode(
+            "big5", errors="ignore"
+        )
+        self._id = int.from_bytes(bytes_data[3136:3140], byteorder="little")
         self._count = int.from_bytes(bytes_data[3140:3144], byteorder="little")
         self._type = int.from_bytes(bytes_data[3144:3148], byteorder="little")
 
@@ -80,6 +84,15 @@ class Item:
         return self._name
 
     @property
+    def id(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return self._id
+
+    @property
     def count(self):
         """_summary_
 
@@ -109,6 +122,12 @@ class ItemCollection(happy.service.Service):
         super().__init__(mem)
         self.update()
 
+    def __getitem__(self, index) -> Item:
+        return self._items[index]
+
+    def __iter__(self) -> Iterator[Item]:
+        return iter(self._items)
+
     def update(self):
         self._items: list[Item] = []
         for i in range(28):
@@ -124,7 +143,7 @@ class ItemCollection(happy.service.Service):
             _type_: _description_
         """
         for item in self._items:
-            if item.type == 23:
+            if item.valid == 1 and item.type == 23:
                 yield item
 
     @property
@@ -135,7 +154,7 @@ class ItemCollection(happy.service.Service):
             _type_: _description_
         """
         for item in self._items:
-            if item.type == 43:
+            if item.valid == 1 and item.type == 43:
                 yield item
 
     @property
@@ -146,7 +165,7 @@ class ItemCollection(happy.service.Service):
             _type_: _description_
         """
         for item in self._items:
-            if item.type == 51:
+            if item.valid == 1 and item.type == 51:
                 yield item
 
     def put(self, item: Item, position: int):
@@ -161,3 +180,37 @@ class ItemCollection(happy.service.Service):
     def tidyup(self):
         """整理背包，直接调用游戏聊天框/r"""
         self._decode_send("uSr 19 1k P|/r")
+
+    def find(self, item_id=0, item_name="", quantity=0):
+        """_summary_
+
+        Args:
+            id (int, optional): _description_. Defaults to 0.
+            name (str, optional): _description_. Defaults to "".
+            quantity (int, optional): _description_. Defaults to 0.
+
+        Returns:
+            _type_: _description_
+        """
+        for item in self._items:
+            if (
+                item.valid == 1
+                and (item.id == item_id or item.name == item_name)
+                and item.count >= quantity
+            ):
+                return item
+        return None
+
+    def find_box(self, name=""):
+        """_summary_
+
+        Args:
+            name (str, optional): _description_. Defaults to "".
+
+        Returns:
+            _type_: _description_
+        """
+        for item in self._items:
+            if item.valid == 1 and "『" + name + "』" in item.name:
+                return item
+        return None

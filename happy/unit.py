@@ -241,12 +241,16 @@ class UnitCollection(Service):
         return iter(self._units)
 
     def get_random_enemy(self):
-        """_summary_
+        """注意当进入战斗过早,units数据未返回时,该函数可能返回None
 
         Returns:
             _type_: _description_
         """
-        return random.choice(self.enemies)
+        if self.enemies:
+            return random.choice(self.enemies)
+        else:
+            # 处理空列表的情况，可以返回 None 或其他默认值
+            return None
     
     @staticmethod
     def count_set_bits(n):

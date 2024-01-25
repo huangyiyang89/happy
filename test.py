@@ -1,43 +1,42 @@
-# # """test"""
-#import struct
 import happy
+import struct
+import heapq
 import time
-cg = happy.Cg.open()
-#cg.decode_export()
-#cg.start_print_packet(True)
-#00508C26
-cg.eat_drug(0)
-#cg._decode_send("Ivfo q")
-#time.sleep(8)
-#cg._decode_send("sM 0 0 -1 912|8|9|10|11|12")
+from happy.util import b62
+import random
+cg =  happy.Cg.open()
+cg.update()
+print(cg.items[0].name+"1")
+print(cg.map.width_east,cg.map.height_south)
 
-# with open(r'C:\BlueCrossgate\map\1\3\148.dat', 'rb') as file:
-#     # 读取檔頭 (20字节)
-#     header = file.read(20)
+#cg._decode_send(f'UUN 1 {b62(cg.map.id)} {b62(cg.map.width_east-1)} {b62(cg.map.height_south-1)} {b62(1)} {b62(1)}')
+for i in range(100):
+    e1 = random.randint(0,cg.map.width_east)
+    e2 = random.randint(0,cg.map.width_east)
+    s1 = random.randint(0,cg.map.height_south)
+    s2 = random.randint(0,cg.map.height_south)
+    cg._decode_send(f'UUN 1 {b62(cg.map.id)} {b62(e1)} {b62(s1)} {b62(e2)} {b62(s2)}')
+    cg.map.read_data()
+    print(len(cg.map.exits))
+    time.sleep(0.5)
+    print(e1,e2,s1,s2)
 
-#     # 解析檔頭
-#     magic_word, width_east, height_south = struct.unpack('3s9x2I', header)
+#17954上
+#17955下    
 
-#     # 检查魔术字是否为 'MAP'
-#     if magic_word != b'MAP':
-#         print("Invalid map file.")
-#         exit()
+#74 65
+# 左下走
+# 41 28
+# VAL 1 wj 24 11 25 11
 
-#     # 读取地面數據
-#     ground_data = file.read(width_east * height_south * 2)
-    
-#     # 读取地上物件/建築物數據
-#     object_data = file.read(width_east * height_south * 2)
+# 右上走
+# 41 28
+# VAL 1 wj 58 11 59 11
 
-#     # 读取地圖標誌
-#     flag_data = file.read(width_east * height_south * 2)
+# 右上走
+# 42 28 
+# VAL 1 wj 59 11 60 11
 
-#     # 解析地圖標誌數據
-#     for i in range(1,height_south+1):
-#         for j in range(1,width_east+1):
-#             map_id = struct.unpack('H', ground_data[i*j * 2-2 : i*j* 2])
-#             object_id = struct.unpack('H', object_data[i*j * 2-2 : i*j* 2])
-#             flag = struct.unpack('H', flag_data[i*j * 2-2 : i*j* 2])
-#             transition, obstacle = struct.unpack('BB', flag_data[i*j * 2-2 : i*j* 2])
-#             if object_id[0]!=0 and object_id[0]!=2:
-#                 print(f"east: {j},south:{i},object_id: {object_id[0]}, Transition: {transition}, Obstacle: {obstacle},flag{flag[0]}")
+
+# 右下走 42 30
+# VAL 1 wj 25 47 60 11

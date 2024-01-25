@@ -89,7 +89,7 @@ class Pet(happy.unit.Unit):
         """
         return self.battle_flag == 2
 
-    def get_skill(self, name1, name2="None") -> happy.skill.PetSkill | None:
+    def get_skill(self, *skill_names) -> happy.skill.PetSkill | None:
         """获得第一个名字包含name1 或name2 的技能
 
         Args:
@@ -99,10 +99,18 @@ class Pet(happy.unit.Unit):
             happy.skill.PetSkill|None: _description_
         """
         for skill in self.skills:
-            if name1 in skill.name or name2 in skill.name:
-                return skill
+            for skill_name in skill_names:
+                if skill_name in skill.name:
+                    return skill
         return None
 
+    def has_power_magic_skill(self)->bool:
+        """判断是否魔宠
+
+        Returns:
+            _type_: _description_
+        """
+        return self.get_skill("強力隕石魔法", "強力冰凍魔法", "強力火焰魔法", "強力風刃魔法") is not None
 
 class BattlePet(Service, Pet):
     """_summary_

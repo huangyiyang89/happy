@@ -1,6 +1,7 @@
 "script"
 import time
 import happy
+from happy.util import bet
 
 
 class Script(happy.Script):
@@ -100,12 +101,15 @@ class Strategy:
         target = cg.battle.units.get_random_enemy()
         skill = cg.player.skills.get_aoe_skill()
 
+        if target is None:
+            return
+
         if (
             enemies_count > 2
             and skill is not None
             and cg.player.mp >= skill.max_level_cost
         ):
-            if "因果報應" or "精神衝擊波" in skill.name:
+            if "因果報應" in skill.name or "精神衝擊波" in skill.name:
                 target = cg.battle.units.get_line_unit()
             cg.player.cast(skill, target, skill.get_efficient_level(enemies_count))
         else:
@@ -118,16 +122,34 @@ class Strategy:
             cg (happy.core.Cg): _description_
         """
         pet = cg.pets.battle_pet
+
         target = cg.battle.units.get_random_enemy()
+        if target is None:
+            return
+
         heal_skill = pet.get_skill("吸血", "明鏡止水")
+        if pet.hp_per <= 70 and heal_skill:
+            pet.cast(heal_skill, target)
+            return
+
+        power_magic = pet.get_skill("強力隕石魔法", "強力冰凍魔法", "強力火焰魔法", "強力風刃魔法")
+        cross_target = cg.battle.units.get_cross_enemy()
+        if power_magic and cross_target:
+            pet.cast(power_magic, cross_target)
+            return
+
+        magic = pet.get_skill("隕石魔法", "冰凍魔法", "火焰魔法", "風刃魔法","強力隕石魔法", "強力冰凍魔法", "強力火焰魔法", "強力風刃魔法")
+        if magic:
+            pet.cast(magic, target)
+            return
+
         guard_counter = pet.get_skill("崩擊")
         enemies_count = len(cg.battle.units.enemies)
-        if enemies_count < 4 and guard_counter is not None:
+        if enemies_count < 4 and guard_counter and bet(50) is not None:
             pet.cast(guard_counter, target)
-        elif pet.hp_per <= 70 and heal_skill is not None:
-            pet.cast(heal_skill, target)
-        else:
-            pet.attack(target)
+            return
+
+        pet.attack(target)
 
 
 class ChuanJiao(Strategy):
@@ -158,4 +180,8 @@ class ChuanJiao(Strategy):
             if skill is not None and cg.player.mp > skill.max_level_cost:
                 cg.player.cast(skill, lowest_friend)
                 return
+
+        target = cg.battle.units.get_random_enemy()
+        if target is None:
+            return
         cg.player.attack(cg.battle.units.get_random_enemy())

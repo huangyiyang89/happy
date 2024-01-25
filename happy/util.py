@@ -1,6 +1,7 @@
 """Utils"""
 from functools import wraps
 import time
+import random
 
 
 def b62(number):
@@ -34,7 +35,18 @@ def b62(number):
     return base62
 
 
-def execute_at_most(second):
+def bet(probability):
+    """probability% 返回True"""
+    # 生成0到100之间的随机数
+    random_num = random.randint(0, 100)
+
+    # 判断随机数是否小于等于给定的概率
+    if random_num <= probability:
+        return True
+    return False
+
+
+def execute_every_second(second):
     """_summary_
 
     Args:

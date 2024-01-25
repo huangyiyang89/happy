@@ -101,3 +101,25 @@ class Service:
             else:
                 print(new)
                 last = new
+
+    def debug_print(self):
+        # 使用 dir 获取类的属性和方法列表
+        all_attributes = dir(self)
+
+        # 筛选出属性和带有 @property 装饰器的方法
+        property_attributes = [attr for attr in all_attributes if isinstance(getattr(self.__class__, attr, None), property)]
+        methods_with_property = [attr for attr in all_attributes if callable(getattr(self, attr, None)) and isinstance(getattr(self.__class__, attr, None), property)]
+
+        # 打印属性
+        print("Properties:")
+        for attr in property_attributes:
+            attr_value = getattr(self, attr)
+            print(f"  {attr}: {attr_value}")
+
+        # 打印带 @property 装饰器的方法
+        print("Methods with @property:")
+        for attr in methods_with_property:
+            attr_value = getattr(self, attr)
+            print(f"  {attr}: {attr_value}")
+
+    

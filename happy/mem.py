@@ -1,5 +1,6 @@
 """cgmem"""
 import pymem
+import psutil
 
 
 class CgMem(pymem.Pymem):
@@ -25,7 +26,7 @@ class CgMem(pymem.Pymem):
             if process.szExeFile == process_name:
                 yield process.th32ProcessID
 
-    def read_xor_value(self,address) -> int:
+    def read_xor_value(self, address) -> int:
         """_summary_
 
         Args:
@@ -35,5 +36,20 @@ class CgMem(pymem.Pymem):
             _type_: _description_
         """
         x = self.read_int(address)
-        y = self.read_int(address+4)
-        return x^y
+        y = self.read_int(address + 4)
+        return x ^ y
+
+    def get_directory(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        try:
+            process = psutil.Process(self.process_id)
+            working_directory = process.cwd()
+            return working_directory
+        except psutil.NoSuchProcess:
+            return "进程ID不存在。"
+        except psutil.AccessDenied:
+            return "没有权限访问进程ID的信息。"
