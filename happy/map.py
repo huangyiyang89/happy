@@ -88,66 +88,69 @@ class Map(happy.service.Service):
 
     def read_data(self):
         """_summary_"""
-        print('read map data')
-        with open(self.file_path, "rb") as file:
-            # 读取檔頭 (20字节)
-            header = file.read(20)
+        print("read map data")
+        try:
+            with open(self.file_path, "rb") as file:
+                # 读取檔頭 (20字节)
+                header = file.read(20)
 
-            # 解析檔頭
-            magic_word, self.width_east, self.height_south = struct.unpack(
-                "3s9x2I", header
-            )
+                # 解析檔頭
+                magic_word, self.width_east, self.height_south = struct.unpack(
+                    "3s9x2I", header
+                )
 
-            # 检查魔术字是否为 'MAP'
-            if magic_word != b"MAP":
-                print("Invalid map file.")
+                # 检查魔术字是否为 'MAP'
+                if magic_word != b"MAP":
+                    print("Invalid map file.")
 
-            # 读取地面數據
-            file.read(self.width_east * self.height_south * 2)
+                # 读取地面數據
+                file.read(self.width_east * self.height_south * 2)
 
-            # 读取地上物件/建築物數據
-            object_data = file.read(self.width_east * self.height_south * 2)
+                # 读取地上物件/建築物數據
+                object_data = file.read(self.width_east * self.height_south * 2)
 
-            # 读取地圖標誌
-            flag_data = file.read(self.width_east * self.height_south * 2)
+                # 读取地圖標誌
+                flag_data = file.read(self.width_east * self.height_south * 2)
 
-            self.map_data = []
-            self.exits = []
-            # 解析地圖標誌數據
-            for i in range(0, self.height_south):
-                east = []
-                for j in range(0, self.width_east):
-                    # map_id = struct.unpack(
-                    #     "H",
-                    #     ground_data[
-                    #         (j + i * width_east) * 2 : (j + i * width_east) * 2 + 2
-                    #     ],
-                    # )
-                    flag = struct.unpack(
-                        "H",
-                        flag_data[
-                            (j + i * self.width_east)
-                            * 2 : (j + i * self.width_east)
-                            * 2
-                            + 2
-                        ],
-                    )
-                    object_id = struct.unpack(
-                        "H",
-                        object_data[
-                            (j + i * self.width_east)
-                            * 2 : (j + i * self.width_east)
-                            * 2
-                            + 2
-                        ],
-                    )
-                    
-                    if flag[0] == 49155:
-                        self.exits.append((j, i,object_id[0]))
-                        east.append(1)
-                    else:
-                        east.append(0 if object_id[0] else 1)
-                self.map_data.append(east)
+                self.map_data = []
+                self.exits = []
+                # 解析地圖標誌數據
+                for i in range(0, self.height_south):
+                    east = []
+                    for j in range(0, self.width_east):
+                        # map_id = struct.unpack(
+                        #     "H",
+                        #     ground_data[
+                        #         (j + i * width_east) * 2 : (j + i * width_east) * 2 + 2
+                        #     ],
+                        # )
+                        flag = struct.unpack(
+                            "H",
+                            flag_data[
+                                (j + i * self.width_east)
+                                * 2 : (j + i * self.width_east)
+                                * 2
+                                + 2
+                            ],
+                        )
+                        object_id = struct.unpack(
+                            "H",
+                            object_data[
+                                (j + i * self.width_east)
+                                * 2 : (j + i * self.width_east)
+                                * 2
+                                + 2
+                            ],
+                        )
+
+                        if flag[0] == 49155:
+                            self.exits.append((j, i, object_id[0]))
+                            east.append(1)
+                        else:
+                            east.append(0 if object_id[0] else 1)
+                    self.map_data.append(east)
+        except FileNotFoundError:
+            print("未能打开地图文件")
 
     def astar(self, x, y):
         """_summary_

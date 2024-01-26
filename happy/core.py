@@ -200,18 +200,23 @@ class Cg(Service):
 
     def eat_food(self, lose_mp=600, excepts="魅惑的哈密瓜麵包"):
         """对玩家使用物品栏中第一个类型为料理的物品"""
-        
+
         first_food = next(
             (food for food in self.items.foods if food.name not in excepts), None
         )
         if first_food is not None:
-            self.use_item(first_food)
-            self.select_target()
             if self.player.mp_max - self.player.mp >= lose_mp:
+                self.use_item(first_food)
+                self.select_target()
                 self._decode_send(
                     f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} 0"
                 )
-            if self.pets.battle_pet.mp_max - self.pets.battle_pet.mp>=lose_mp and self.pets.battle_pet.has_power_magic_skill():
+            if (
+                self.pets.battle_pet.mp_max - self.pets.battle_pet.mp >= lose_mp
+                and self.pets.battle_pet.has_power_magic_skill()
+            ):
+                self.use_item(first_food)
+                self.select_target()
                 self._decode_send(
                     f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} 1"
                 )
@@ -387,8 +392,7 @@ class Cg(Service):
 
     @staticmethod
     def close_handles():
-        """_summary_
-        """
-        process_ids=list(CgMem.list_cg_processes())
-        handles = happy.pywinhandle.find_handles(process_ids, ['汢敵'])
+        """_summary_"""
+        process_ids = list(CgMem.list_cg_processes())
+        handles = happy.pywinhandle.find_handles(process_ids, ["汢敵"])
         happy.pywinhandle.close_handles(handles)
