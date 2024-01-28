@@ -12,11 +12,11 @@ class Script(happy.Script):
     def __init__(self) -> None:
         super().__init__()
         self.name = "自动遇敌"
-        self.range = 3
+        self.range = 2
         self.start_x = 0
         self.start_y = 0
 
-    def on_not_battle(self, cg: happy.Cg):
+    def on_not_moving(self, cg: happy.Cg):
         """_summary_
 
         Args:

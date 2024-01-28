@@ -71,7 +71,7 @@ class Script:
             cg (_type_): _description_
         """
 
-    def on_not_walking(self, cg):
+    def on_not_moving(self, cg):
         """_summary_
 
         Args:

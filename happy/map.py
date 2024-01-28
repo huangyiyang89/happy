@@ -3,8 +3,9 @@ import os
 import struct
 import heapq
 from happy.mem import CgMem
-from happy.util import b62
+from happy.util import b62, timer
 import happy.service
+from happy.dict import map_info_dict
 
 
 class Map(happy.service.Service):
@@ -16,12 +17,13 @@ class Map(happy.service.Service):
 
     def __init__(self, mem: CgMem) -> None:
         super().__init__(mem)
-        self.map_data = []
+        self.map_flag_data = []
         self.exits = []
         self.width_east = 0
         self.height_south = 0
         self.last_map_id = 0
         self.file_last_mtime = 0
+        self.graphic_info_dict = {}
 
     @property
     def x(self):
@@ -86,53 +88,38 @@ class Map(happy.service.Service):
         """
         return self.mem.get_directory() + "\\" + self.mem.read_string(0x0018CCCC)
 
+    @timer
     def read_data(self):
         """_summary_"""
-        print("read map data")
+        print("start read map data")
+
         try:
             with open(self.file_path, "rb") as file:
-                # 读取檔頭 (20字节)
                 header = file.read(20)
-
-                # 解析檔頭
                 magic_word, self.width_east, self.height_south = struct.unpack(
                     "3s9x2I", header
                 )
-
-                # 检查魔术字是否为 'MAP'
                 if magic_word != b"MAP":
                     print("Invalid map file.")
-
-                # 读取地面數據
-                file.read(self.width_east * self.height_south * 2)
-
-                # 读取地上物件/建築物數據
+                ground_data = file.read(self.width_east * self.height_south * 2)
                 object_data = file.read(self.width_east * self.height_south * 2)
-
-                # 读取地圖標誌
                 flag_data = file.read(self.width_east * self.height_south * 2)
-
-                self.map_data = []
+                self.map_flag_data = [
+                    [1 for _ in range(self.width_east)]
+                    for _ in range(self.height_south)
+                ]
                 self.exits = []
-                # 解析地圖標誌數據
                 for i in range(0, self.height_south):
-                    east = []
                     for j in range(0, self.width_east):
-                        # map_id = struct.unpack(
-                        #     "H",
-                        #     ground_data[
-                        #         (j + i * width_east) * 2 : (j + i * width_east) * 2 + 2
-                        #     ],
-                        # )
-                        flag = struct.unpack(
+                        map_id = struct.unpack(
                             "H",
-                            flag_data[
+                            ground_data[
                                 (j + i * self.width_east)
                                 * 2 : (j + i * self.width_east)
                                 * 2
                                 + 2
                             ],
-                        )
+                        )[0]
                         object_id = struct.unpack(
                             "H",
                             object_data[
@@ -141,16 +128,59 @@ class Map(happy.service.Service):
                                 * 2
                                 + 2
                             ],
-                        )
+                        )[0]
+                        flag = struct.unpack(
+                            "H",
+                            flag_data[
+                                (j + i * self.width_east)
+                                * 2 : (j + i * self.width_east)
+                                * 2
+                                + 2
+                            ],
+                        )[0]
 
-                        if flag[0] == 49155:
-                            self.exits.append((j, i, object_id[0]))
-                            east.append(1)
-                        else:
-                            east.append(0 if object_id[0] else 1)
-                    self.map_data.append(east)
+                        if flag == 49155:
+                            self.exits.append((j, i, object_id))
+                            print(f"找到场景转换坐标={j},{i},object_id={object_id}")
+
+                        # if flag == 0:
+                        #     self.map_flag_data[i][j] = 0
+
+                        # east, north, flag = map_info_dict[str(map_id)]
+                        # if not flag:
+                        #     self.map_flag_data[i][j] = 0
+
+                        if object_id:
+                            if str(object_id) in map_info_dict:
+                                e, s, f = map_info_dict[str(object_id)]
+                                for l in range(e):
+                                    for m in range(s):
+                                        self.map_flag_data[i - m][j + l] = f
+                            else:
+                                self.map_flag_data[i][j] = 0
+                self.exits = sorted(self.exits, key=lambda x: x[2])
+                try:
+                    print(
+                        f"{self.map_flag_data[self.y-1][self.x]},  ,{self.map_flag_data[self.y][self.x+1]}"
+                    )
+                    print("  *  ")
+                    print(
+                        f"{self.map_flag_data[self.y][self.x-1]},  ,{self.map_flag_data[self.y+1][self.x]}"
+                    )
+                except:
+                    pass
         except FileNotFoundError:
             print("未能打开地图文件")
+
+    def paint_map(self):
+        """_summary_"""
+        for line in self.map_flag_data:
+            for point in line:
+                if not point:
+                    print("■", end="")
+                else:
+                    print(" ", end="")
+            print("")
 
     def astar(self, x, y):
         """_summary_
@@ -191,7 +221,7 @@ class Map(happy.service.Service):
 
             visited.add(current[:2])
 
-            for neighbor in neighbors(current, self.map_data):
+            for neighbor in neighbors(current, self.map_flag_data):
                 if neighbor[:2] not in visited:
                     h = abs(neighbor[0] - goal[0]) + abs(neighbor[1] - goal[1])
                     heapq.heappush(heap, (cost + h, neighbor))
@@ -212,3 +242,59 @@ class Map(happy.service.Service):
         #         self.file_last_mtime = mtime
         # except FileNotFoundError:
         #     print("dat文件未找到。")
+
+    def read_info_data(self):
+        # GraphicInfo_66.bin 4100+
+        # GraphicInfo_Joy_54 243021
+        # GraphicInfo_Joy_CH1 91500
+        # GraphicInfo_Joy_EX_9 1199994
+        # GraphicInfoEX_5 223018
+        # GraphicInfoV3_19 27660
+        # puk3\Graphicinfo_PUK3_1 301119
+        # puk2\GraphicInfo_PUK2_2 300001
+        pass
+
+    def find_largest_square_area(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        except_exit_data = self.map_flag_data
+        for _exit in self.exits:
+            except_exit_data[_exit[1]][_exit[0]]=0
+
+        if not except_exit_data:
+            return []
+
+        m, n = len(except_exit_data), len(except_exit_data[0])
+        dp = [[0] * n for _ in range(m)]
+
+        # 初始化第一行和第一列
+        for i in range(m):
+            dp[i][0] = except_exit_data[i][0]
+        for j in range(n):
+            dp[0][j] = except_exit_data[0][j]
+
+        # 填充动态规划表
+        for i in range(1, m):
+            for j in range(1, n):
+                if except_exit_data[i][j] == 1:
+                    dp[i][j] = min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]) + 1
+
+        # 找出最大正方形区域
+        max_size = 0
+        max_i, max_j = 0, 0
+        for i in range(m):
+            for j in range(n):
+                if dp[i][j] > max_size:
+                    max_size = dp[i][j]
+                    max_i, max_j = i, j
+
+        # 构造最大正方形区域的位置列表
+        square_area = []
+        for i in range(max_i - max_size + 1, max_i + 1):
+            for j in range(max_j - max_size + 1, max_j + 1):
+                square_area.append((i, j))
+
+        return square_area

@@ -4,6 +4,31 @@ import time
 import random
 
 
+def merge_path(path):
+    """_summary_
+
+    Args:
+        path (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    if path is None:
+        return None
+    length = len(path)
+    if length == 1:
+        return path
+    merged_path = [path[0]]
+    for i in range(1, length - 1):
+        pre_x, pre_y = path[i - 1]
+        cur_x, cur_y = next_x, next_y = path[i]
+        next_x, next_y = path[i + 1]
+        if next_x - cur_x != cur_x - pre_x or next_y - cur_y != cur_y - pre_y:
+            merged_path.append(path[i])
+    merged_path.append(path[-1])
+    return merged_path
+
+
 def b62(number):
     """_summary_
 
@@ -72,3 +97,18 @@ def execute_every_second(second):
         return wrapper
 
     return decorator
+
+
+def timer(func):
+    """_summary_
+
+    Args:
+        func (_type_): _description_
+    """
+    def wrapper(*args, **kwargs):
+        start_time = time.time()  # 记录函数开始时间
+        result = func(*args, **kwargs)  # 执行被装饰的函数
+        end_time = time.time()  # 记录函数结束时间
+        print(f"函数 {func.__name__} 运行时间: {end_time - start_time} 秒")
+        return result
+    return wrapper

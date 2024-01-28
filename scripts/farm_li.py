@@ -1,7 +1,7 @@
 "script"
-import happy
 import time
 import random
+import happy
 from happy.util import b62
 
 
@@ -16,13 +16,15 @@ class Script(happy.Script):
         super().__init__()
         self.name = "里洞战神"
 
-    def on_not_battle(self, cg: happy.Cg):
+    def on_not_moving(self, cg: happy.Cg):
         """_summary_
 
         Args:
             cg (happy.core.Cg): _description_
         """
-        
+        if cg.items.blanks_count == 0:
+            self.on_bag_is_full(cg)
+            return
 
         if cg.player.hp_per < 30 or cg.player.mp < 30 or cg.pets.battle_pet.hp_per < 30:
             self.on_low_health(cg)
@@ -34,7 +36,10 @@ class Script(happy.Script):
 
         # 亚诺曼
         if cg.map.id == 30010:
-            cg.go_astar(21, 126)
+            if cg.map.x > 100:
+                cg.tp()
+            else:
+                cg.go_astar(21, 126)
 
         # 德威特岛
         if cg.map.id == 30001:
@@ -45,10 +50,10 @@ class Script(happy.Script):
             if len(cg.map.exits) > 0:
                 cg.go_astar(cg.map.exits[0][0], cg.map.exits[0][1])
             else:
-                cg.map.read_data()
                 cg.go_astar(25, 15)
 
         if "地下" in cg.map.name:
+            cg.map.read_data()
             if len(cg.map.exits) < 2:
                 e1 = random.randint(0, cg.map.width_east)
                 e2 = random.randint(0, cg.map.width_east)
@@ -57,9 +62,20 @@ class Script(happy.Script):
                 cg._decode_send(
                     f"UUN 1 {b62(cg.map.id)} {b62(e1)} {b62(s1)} {b62(e2)} {b62(s2)}"
                 )
-            for exit in cg.map.exits:
-                if exit[2] == 17955:
-                    cg.go_astar(exit[0], exit[1])
+            else:
+                if cg.map.exits[-1][2] == 17955:
+                    cg.go_astar(cg.map.exits[-1][0], cg.map.exits[-1][1])
+                else:
+                    # 到达最后一层
+                    area = cg.map.find_largest_square_area()
+                    dx,dy = random.choice(area)
+                    cg.go_astar(dx,dy)
+
+        if "底層" in cg.map.name:
+            cg.go_if(13, 6, 6, 10)
+            cg.go_if(
+                6, 10, 12, 22, 9 + random.randint(-2, 2), 16 + random.randint(-2, 2)
+            )
 
     def on_low_health(self, cg: happy.Cg):
         """_summary_
@@ -67,23 +83,23 @@ class Script(happy.Script):
         Args:
             cg (happy.Cg): _description_
         """
-        if cg.map.id == 30105:
-            if (cg.map.x, cg.map.y) == (13, 22):
-                cg.right_click("C")
-            else:
-                cg.go_to(13, 22)
-            return
-
         if cg.map.id not in (30010, 30105):
             print("low hp and map id wrong")
             cg.tp()
             return
 
-        if (cg.map.x, cg.map.y) == (68, 100) or (cg.map.x, cg.map.y) == (194, 93):
-            cg.right_click("A")
-            time.sleep(0.5)
-        else:
-            cg.go_astar(116, 134)
+        if cg.map.id == 30105:
+            if (cg.map.x, cg.map.y) == (13, 23):
+                cg.right_click("B")
+            else:
+                cg.go_to(13, 23)
+
+        if cg.map.id == 30010:
+            if (cg.map.x, cg.map.y) == (68, 100) or (cg.map.x, cg.map.y) == (194, 93):
+                cg.right_click("A")
+                time.sleep(0.5)
+            else:
+                cg.go_to(116, 134)
 
     def on_bag_is_full(self, cg: happy.Cg):
         """_summary_
@@ -91,7 +107,26 @@ class Script(happy.Script):
         Args:
             cg (happy.Cg): _description_
         """
-        pass
+        if cg.map.id not in [30105, 30010]:
+            cg.tp()
+
+        # 亚诺曼医院
+        if cg.map.id == 30105:
+            cg.go_to(8, 29)
+            return
+
+        # 亚诺曼
+        if cg.map.id == 30010:
+            cg.go_if(116, 130, 136, 142, 133, 133)
+
+            if (cg.map.x, cg.map.y) == (68, 100) or (cg.map.x, cg.map.y) == (194, 93):
+                cg.right_click("A")
+                time.sleep(0.5)
+
+            if (cg.map.x, cg.map.y) == (133, 133):
+                cg.right_click("A")
+                cg.sell()
+            return
 
     def on_enable(self, enable):
         pass

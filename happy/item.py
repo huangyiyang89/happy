@@ -135,6 +135,33 @@ class ItemCollection(happy.service.Service):
                 Item(i, self.mem.read_bytes(0x00F4C494 + 0xC5C * i, 0xC5C))
             )
 
+
+    @property
+    def bags_valids(self):
+        """_summary_
+
+        Yields:
+            _type_: _description_
+        """
+        for i in range(8,28):
+            item = self._items[i]
+            if item.valid:
+                yield item
+
+    @property
+    def blanks_count(self):
+        """_summary_
+
+        Yields:
+            _type_: _description_
+        """
+        count = 0
+        for i in range(8,28):
+            item = self._items[i]
+            if not item.valid:
+                count = count +1
+        return count
+
     @property
     def foods(self):
         """_summary_
@@ -168,6 +195,8 @@ class ItemCollection(happy.service.Service):
             if item.valid == 1 and item.type == 51:
                 yield item
 
+
+    
     def put(self, item: Item, position: int):
         """拿起item放到指定position
 

@@ -6,6 +6,7 @@ import time
 import importlib
 import importlib.util
 import sys
+import random
 from typing import Literal
 import happy.unit
 import happy.player
@@ -16,7 +17,7 @@ from happy.mem import CgMem
 from happy.battle import Battle
 from happy.service import Service
 from happy.item import Item, ItemCollection
-from happy.util import b62
+from happy.util import b62, merge_path
 import happy.pywinhandle
 
 
@@ -38,7 +39,7 @@ class Cg(Service):
         self.is_closed = False
 
     @staticmethod
-    def open():
+    def open(name=""):
         """open cg process and add process to __opened_cg_processes[]
         Returns:
             _type_: HappyCG
@@ -48,6 +49,8 @@ class Cg(Service):
             if process not in Cg.opened_cg_processes:
                 mem = CgMem(process)
                 new_cg = Cg(mem)
+                if name not in new_cg.player.name:
+                    continue
                 Cg.opened_cg_processes.append(process)
                 new_cg.update()
                 return new_cg
@@ -99,6 +102,8 @@ class Cg(Service):
                         script.on_pet_turn(self)
                 else:
                     script.on_not_battle(self)
+                    if not self.is_moving:
+                        script.on_not_moving(self)
 
     def go_to(self, x, y):
         """_summary_
@@ -142,8 +147,6 @@ class Cg(Service):
         if (x1 <= self.map.x <= x2 or x2 <= self.map.x <= x1) and (
             y1 <= self.map.y <= y2 or y2 <= self.map.y <= y1
         ):
-            if self.map.x == x2 and self.map.y == y2:
-                return
             if (
                 x3 is not None
                 and y3 is not None
@@ -151,7 +154,10 @@ class Cg(Service):
                 and self.map.y != y3
             ):
                 self.go_to(x3, y3)
-            else:
+
+            if x3 is None and y3 is None:
+                if self.map.x == x2 and self.map.y == y2:
+                    return
                 self.go_to(x2, y2)
 
     def go_astar(self, x, y):
@@ -161,10 +167,14 @@ class Cg(Service):
             x (_type_): _description_
             y (_type_): _description_
         """
+        #self.map.read_data()
         path = self.map.astar(x, y)
         if path and len(path) > 1:
+            path = merge_path(path)
             self.go_to(*path[1])
         else:
+            print('未找到路径')
+            self.go_to(x + random.randint(-2, 2), y + random.randint(-2, 2))
             self.map.read_data()
 
     def load_script(self, file_path, module_name, class_name, enable=False):
@@ -213,12 +223,13 @@ class Cg(Service):
                 )
             if (
                 self.pets.battle_pet.mp_max - self.pets.battle_pet.mp >= lose_mp
+                and self.pets.battle_pet.mp < 200
                 and self.pets.battle_pet.has_power_magic_skill()
             ):
                 self.use_item(first_food)
                 self.select_target()
                 self._decode_send(
-                    f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} 1"
+                    f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} {self.pets.battle_pet.index+1}"
                 )
         else:
             print("nothing to eat")
@@ -349,6 +360,22 @@ class Cg(Service):
                     < 200
                 ):
                     self._decode_send(f"xD {x62} {y62} 5W {npc_id_62} 4")
+
+    def sell(self):
+        """_summary_"""
+        # xD 29 29 5o 4YS 0 24\\z1
+        dialog_type = self.get_dialog_type()
+        if dialog_type == 5:
+            # npc_type = self.get_npc_type()
+            npc_id_62 = b62(self.get_npc_id())
+            x62 = self.map.x_62
+            y62 = self.map.y_62
+            items_str = ""
+            for item in self.items.bags_valids:
+                if "魔石" in item.name:
+                    items_str += str(item.index) + r"\\z" + str(item.count) + r"\\z"
+            content = f"xD {x62} {y62} 5o 4YS 0 " + items_str
+            self._decode_send(content)
 
     def _stop_random_key(self):
         self.mem.write_bytes(0x00530CA3, bytes.fromhex("90 90 90 90 90"), 5)
