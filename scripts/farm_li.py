@@ -43,7 +43,10 @@ class Script(happy.Script):
 
         # 德威特岛
         if cg.map.id == 30001:
-            cg.go_astar(129, 295)
+            cg.go_if(211,344,156,339,156,343)
+            cg.go_if(156,343,153,315)
+            cg.go_if(153,315,122,306)
+            cg.go_if(122,306,129,295)
 
         # 里洞（外）
         if cg.map.id == 32511:
@@ -62,14 +65,16 @@ class Script(happy.Script):
                 cg._decode_send(
                     f"UUN 1 {b62(cg.map.id)} {b62(e1)} {b62(s1)} {b62(e2)} {b62(s2)}"
                 )
+                # cg._decode_send(
+                #         f"UUN 1 {b62(cg.map.id)} {cg.map.x} {cg.map.y} {b62(cg.map.width_east)} {b62(cg.map.height_south)}"
+                # )
+                cg.go_astar(cg.map.x+random.randint(-5,5),cg.map.y+random.randint(-5,5))
             else:
                 if cg.map.exits[-1][2] == 17955:
                     cg.go_astar(cg.map.exits[-1][0], cg.map.exits[-1][1])
                 else:
                     # 到达最后一层
-                    area = cg.map.find_largest_square_area()
-                    dx,dy = random.choice(area)
-                    cg.go_astar(dx,dy)
+                    cg.go_astar(cg.map.x+random.randint(-5,5),cg.map.y+random.randint(-5,5))
 
         if "底層" in cg.map.name:
             cg.go_if(13, 6, 6, 10)

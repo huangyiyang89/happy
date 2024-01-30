@@ -25,17 +25,12 @@ class Service:
         # 0050D2D0 打断点 看指针0057A718是完整加密字符串
 
         # jump hook
-        self.mem.write_int(0x00507780, 0x0798CBE9)
+        self.mem.write_int(0x00507780, 0x0799CBE9)
         # 汇编指令写入
         self.mem.write_bytes(
-            0x00581050,
+            0x00581150,
             bytes.fromhex(
-                "FF 25 D0 10 58 00 8B 05 00 10 58 00 A3 40 10 58 00 C7 05 44 10 58 00 00 00 \
-                    00 00 68 40 10 58 00 68 40 10 58 00 E8 E6 C2 F8 FF 83 C4 08 B8 00 10 58 \
-                        00 8B 0D 40 10 58 00 80 3D 02 10 58 00 20 66 89 08 74 12 80 3D 03 10 \
-                            58 00 20 89 08 75 07 C6 05 03 10 58 00 20 8B 54 24 10 50 52 E8 1F \
-                                C2 F8 FF 83 C4 08 C7 05 D0 10 58 00 C0 10 58 00 C3 90 8B 05 18 \
-                                    A7 57 00 E9 BA 66 F8 FF 90 90 90 90 90 56 10 58 00"
+                "FF 25 D0 11 58 00 8B 05 00 10 58 00 A3 40 11 58 00 C7 05 44 11 58 00 00 00 00 00 68 40 11 58 00 68 40 11 58 00 E8 E6 C1 F8 FF 83 C4 08 B8 00 10 58 00 8B 0D 40 11 58 00 80 3D 02 10 58 00 20 66 89 08 74 12 80 3D 03 10 58 00 20 89 08 75 07 C6 05 03 10 58 00 20 8B 54 24 10 50 52 E8 1F C1 F8 FF 83 C4 08 C7 05 D0 11 58 00 C0 11 58 00 C3 90 8B 05 18 A7 57 00 E9 BA 65 F8 FF 90 90 90 90 90 56 11 58 00"
             ),
             132,
         )
@@ -107,8 +102,17 @@ class Service:
         all_attributes = dir(self)
 
         # 筛选出属性和带有 @property 装饰器的方法
-        property_attributes = [attr for attr in all_attributes if isinstance(getattr(self.__class__, attr, None), property)]
-        methods_with_property = [attr for attr in all_attributes if callable(getattr(self, attr, None)) and isinstance(getattr(self.__class__, attr, None), property)]
+        property_attributes = [
+            attr
+            for attr in all_attributes
+            if isinstance(getattr(self.__class__, attr, None), property)
+        ]
+        methods_with_property = [
+            attr
+            for attr in all_attributes
+            if callable(getattr(self, attr, None))
+            and isinstance(getattr(self.__class__, attr, None), property)
+        ]
 
         # 打印属性
         print("Properties:")
@@ -121,5 +125,3 @@ class Service:
         for attr in methods_with_property:
             attr_value = getattr(self, attr)
             print(f"  {attr}: {attr_value}")
-
-    

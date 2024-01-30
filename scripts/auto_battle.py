@@ -104,6 +104,12 @@ class Strategy:
         if target is None:
             return
 
+        if cg.player.hp_per<40:
+            drug = next(cg.items.drugs)
+            if drug:
+                cg.player.use_battle_item(drug,cg.player)
+                return
+
         if (
             enemies_count > 2
             and skill is not None

@@ -1,18 +1,54 @@
-import happy
-import struct
-import heapq
-import time
-from happy.util import b62
-import random
+# import happy
+# import struct
+# import heapq
+# import time
+# from happy.util import b62
+# import random
 
-cg = happy.Cg.open("中指通")
-cg.right_click('A')
-s = r"yJ 29 29 5o 4YS 0 9\\z3\\z10\\z3\\z11\\z3\\z12\\z3\\z13\\z3\\z14\\z1\\z15\\z3\\z16\\z3\\z18\\z3\\z19\\z1\\z21\\z3\\z22\\z3\\z23\\z2\\z24\\z3\\z25\\z1\\z26\\z1\\z27\\z1"
-print(len(s))
-while True:
-    s = cg.mem.read_string(0x222F0008,byte=5000)
-    if s:
-        print(s)
+# cg = happy.Cg.open("百瀨飛鳥")
+# while True:
+#     cg.map.read_data()
+#     if len(cg.map.exits) < 2:
+#         e1 = random.randint(0, cg.map.width_east)
+#         e2 = random.randint(0, cg.map.width_east)
+#         s1 = random.randint(0, cg.map.height_south)
+#         s2 = random.randint(0, cg.map.height_south)
+#         cg._decode_send(
+#             f"UUN 1 {b62(cg.map.id)} {b62(e1)} {b62(s1)} {b62(e2)} {b62(s2)}"
+#         )
+#     else:
+#         if cg.map.exits[-1][2] == 12002:
+#             cg.go_astar(cg.map.exits[-1][0], cg.map.exits[-1][1])
+#     time.sleep(0.1)
+import requests
+
+def send_markdown(content):
+    url = 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=e0ce689b-5a47-4ae2-ab5e-0539268956d7'
+    payload = {
+        "msgtype": "markdown",
+        "markdown": {
+            "content": content
+        }
+    }
+    headers = {'Content-Type': 'application/json'}
+    
+    response = requests.post(url, json=payload, headers=headers)
+    
+    if response.status_code == 200:
+        print("Markdown message sent successfully.")
+    else:
+        print("Failed to send Markdown message. Status code:", response.status_code)
+
+# Example usage:
+content = "### 游戏账号:mlbbhy01\n[验证链接](https://www.bluecg.net/plugin.php?id=gift:recaptchalog)"
+send_markdown(content)
+    # cg._decode_send(
+    #         f"UUN 1 {b62(cg.map.id)} {cg.map.x} {cg.map.y} {b62(cg.map.width_east)} {b62(cg.map.height_south)}"
+    # )
+    
+# s = r"yJ 29 29 5o 4YS 0 9\\z3\\z10\\z3\\z11\\z3\\z12\\z3\\z13\\z3\\z14\\z1\\z15\\z3\\z16\\z3\\z18\\z3\\z19\\z1\\z21\\z3\\z22\\z3\\z23\\z2\\z24\\z3\\z25\\z1\\z26\\z1\\z27\\z1"
+# print(len(s))
+
 #GraphicInfo_66.bin 4100+
 #GraphicInfo_Joy_54 243021
 #GraphicInfo_Joy_CH1 91500

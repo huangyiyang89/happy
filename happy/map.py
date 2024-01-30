@@ -230,7 +230,7 @@ class Map(happy.service.Service):
 
     def update(self):
         if self.id != self.last_map_id:
-            self.read_data()
+            #self.read_data()
             self.last_map_id = self.id
 
         # try:

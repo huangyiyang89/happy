@@ -147,13 +147,9 @@ class Cg(Service):
         if (x1 <= self.map.x <= x2 or x2 <= self.map.x <= x1) and (
             y1 <= self.map.y <= y2 or y2 <= self.map.y <= y1
         ):
-            if (
-                x3 is not None
-                and y3 is not None
-                and self.map.x != x3
-                and self.map.y != y3
-            ):
-                self.go_to(x3, y3)
+            if x3 is not None and y3 is not None:
+                if not (self.map.x == x3 and self.map.y == y3):
+                    self.go_to(x3, y3)
 
             if x3 is None and y3 is None:
                 if self.map.x == x2 and self.map.y == y2:
@@ -167,7 +163,7 @@ class Cg(Service):
             x (_type_): _description_
             y (_type_): _description_
         """
-        #self.map.read_data()
+        self.map.read_data()
         path = self.map.astar(x, y)
         if path and len(path) > 1:
             path = merge_path(path)
@@ -363,7 +359,8 @@ class Cg(Service):
 
     def sell(self):
         """_summary_"""
-        # xD 29 29 5o 4YS 0 24\\z1
+        # xD 29 29 5o 54L 0 11\\z3\\z12\\z3\\z13\\z3\\z14\\z3\\z15\\z3\\z16\\z3\\z18\\z3\\z19\\z3\\z21\\z3\\z23\\z3\\z24\\z3\\z25\\z1\\z26\\z2\\z27\\z1
+        unk = self.mem.read_int(0x00CAF1F4)
         dialog_type = self.get_dialog_type()
         if dialog_type == 5:
             # npc_type = self.get_npc_type()
@@ -374,7 +371,7 @@ class Cg(Service):
             for item in self.items.bags_valids:
                 if "魔石" in item.name:
                     items_str += str(item.index) + r"\\z" + str(item.count) + r"\\z"
-            content = f"xD {x62} {y62} 5o 4YS 0 " + items_str
+            content = f"xD {x62} {y62} 5o {b62(unk)} 0 " + items_str[:-3]
             self._decode_send(content)
 
     def _stop_random_key(self):
