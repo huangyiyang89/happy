@@ -132,20 +132,24 @@ class BattlePet(Service, Pet):
         self.mem.write_string(0x00543EC0, pet_battle_order.ljust(8, "\0"))
         self.mem.write_bytes(0x00475A8C, bytes.fromhex("90 90"), 2)
         self.mem.write_bytes(0x00CDA984, bytes.fromhex("02"), 1)
+        # 骑乘
+        self.mem.write_bytes(0x00475D92, bytes.fromhex("90 90"), 2)
         print(pet_battle_order)
         time.sleep(0.1)
         # 还原
         self.mem.write_string(0x00543EC0, r"W|%X|%X" + "\0")
         self.mem.write_bytes(0x00475A8C, bytes.fromhex("74 73"), 2)
+        # 骑乘
+        self.mem.write_bytes(0x00475D92, bytes.fromhex("74 6E"), 2)
 
-    def cast(self, skill: happy.skill.PetSkill, unit: happy.unit.Unit):
+    def cast(self, skill: happy.skill.PetSkill, unit: happy.unit.Unit = None):
         """normal attack while no mana
 
         Args:
             skill (happy.skill.PetSkill): _description_
             unit (happy.unit.Unit): _description_
         """
-        position = unit.position
+        position = unit.position if unit is not None else 0
         if self.mp>=skill.cost:
             if "強力" in skill.name:
                 position = position + 0x14

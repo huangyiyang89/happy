@@ -40,7 +40,7 @@ def send_markdown(content):
         print("Failed to send Markdown message. Status code:", response.status_code)
 
 # Example usage:
-content = "### 游戏账号:mlbbhy01\n[验证链接](https://www.bluecg.net/plugin.php?id=gift:recaptchalog)"
+content = "### 游戏账号:mlbbhy01\n[验证链接](https://www.bluecg.net/plugin.php?id=gift:v3&ac=mlbbhy198901&time=1706625306)"
 send_markdown(content)
     # cg._decode_send(
     #         f"UUN 1 {b62(cg.map.id)} {cg.map.x} {cg.map.y} {b62(cg.map.width_east)} {b62(cg.map.height_south)}"

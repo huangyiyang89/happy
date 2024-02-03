@@ -6,6 +6,7 @@ import time
 import importlib
 import importlib.util
 import sys
+import requests
 import random
 from typing import Literal
 import happy.unit
@@ -37,6 +38,7 @@ class Cg(Service):
         self.items = ItemCollection(mem)
         self._scripts = []
         self.is_closed = False
+        self._last_captcha_code = ""
 
     @staticmethod
     def open(name=""):
@@ -100,6 +102,8 @@ class Cg(Service):
                         script.on_player_second_turn(self)
                     elif self.battle.is_pet_turn:
                         script.on_pet_turn(self)
+                    elif self.battle.is_pet_second_turn:
+                        script.on_pet_second_turn(self)
                 else:
                     script.on_not_battle(self)
                     if not self.is_moving:
@@ -169,7 +173,7 @@ class Cg(Service):
             path = merge_path(path)
             self.go_to(*path[1])
         else:
-            print('未找到路径')
+            print("未找到路径")
             self.go_to(x + random.randint(-2, 2), y + random.randint(-2, 2))
             self.map.read_data()
 
@@ -279,6 +283,15 @@ class Cg(Service):
         return self.mem.read_int(0x0054DCB0) != 65535
 
     @property
+    def account(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.mem.read_string(0x00D15644)
+
+    @property
     def is_opening_dialog(self):
         """_summary_
 
@@ -369,7 +382,7 @@ class Cg(Service):
             y62 = self.map.y_62
             items_str = ""
             for item in self.items.bags_valids:
-                if "魔石" in item.name:
+                if "魔石" in item.name or "卡片" in item.name:
                     items_str += str(item.index) + r"\\z" + str(item.count) + r"\\z"
             content = f"xD {x62} {y62} 5o {b62(unk)} 0 " + items_str[:-3]
             self._decode_send(content)
@@ -414,9 +427,48 @@ class Cg(Service):
         self._decode_send(send_content)
         return True
 
+    def get_captcha(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        code = self.mem.read_string(0x00C32D4E, 10)
+        if code != "" and self._last_captcha_code != code:
+            self._last_captcha_code = code
+            return code
+        return None
+
     @staticmethod
     def close_handles():
         """_summary_"""
         process_ids = list(CgMem.list_cg_processes())
         handles = happy.pywinhandle.find_handles(process_ids, ["汢敵"])
         happy.pywinhandle.close_handles(handles)
+
+    def send_wechat_notification(self):
+        """_summary_
+
+        Args:
+            content (_type_): _description_
+        """
+        code = self.get_captcha()
+        if code is not None:
+            url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=e0ce689b-5a47-4ae2-ab5e-0539268956d7"
+            payload = {
+                "msgtype": "markdown",
+                "markdown": {
+                    "content": f"### 账号: {self.account}\n### 验证链接:\n[https://www.bluecg.net/plugin.php?id=gift:v3&ac={self.account}&time={code}](https://www.bluecg.net/plugin.php?id=gift:v3&ac={self.account}&time={code})"
+                }
+            }
+            headers = {"Content-Type": "application/json"}
+
+            response = requests.post(url, json=payload, headers=headers, timeout=1000)
+
+            if response.status_code == 200:
+                print("Markdown message sent successfully.")
+            else:
+                print(
+                    "Failed to send Markdown message. Status code:",
+                    response.status_code,
+                )

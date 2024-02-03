@@ -64,6 +64,13 @@ class Script:
             cg (_type_): _description_
         """
 
+    def on_pet_second_turn(self, cg):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+        """
+
     def on_not_battle(self, cg):
         """_summary_
 

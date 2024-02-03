@@ -132,7 +132,7 @@ class Player(happy.service.Service):
         self.mem.write_string(addr_player_buffer, "G\0")
         self.mem.write_bytes(addr_player_flag, bytes.fromhex("74 5E"), 2)
 
-    def cast(self, skill: happy.skill.PlayerSkill, unit: happy.unit.Unit, use_level=11):
+    def cast(self, skill: happy.skill.PlayerSkill, unit: happy.unit.Unit = None, use_level=11):
         """_summary_
 
         Args:
@@ -141,7 +141,7 @@ class Player(happy.service.Service):
             pos (_type_): _description_
         """
         cast_level = use_level if skill.level > use_level else skill.level
-        position = unit.position
+        position = unit.position if unit is not None else 0
         if "強力" in skill.name:
             position = position + 0x14
         if "超強" in skill.name:

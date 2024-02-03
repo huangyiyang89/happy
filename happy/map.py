@@ -159,16 +159,7 @@ class Map(happy.service.Service):
                             else:
                                 self.map_flag_data[i][j] = 0
                 self.exits = sorted(self.exits, key=lambda x: x[2])
-                try:
-                    print(
-                        f"{self.map_flag_data[self.y-1][self.x]},  ,{self.map_flag_data[self.y][self.x+1]}"
-                    )
-                    print("  *  ")
-                    print(
-                        f"{self.map_flag_data[self.y][self.x-1]},  ,{self.map_flag_data[self.y+1][self.x]}"
-                    )
-                except:
-                    pass
+                
         except FileNotFoundError:
             print("未能打开地图文件")
 

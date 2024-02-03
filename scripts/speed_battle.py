@@ -13,7 +13,7 @@ class Script(happy.script.Script):
     def __init__(self) -> None:
         super().__init__()
         self.name = "高速战斗"
-        self.speed = 100
+        self.speed = 200
 
 
     def on_battle(self, cg: happy.Cg):

@@ -195,7 +195,14 @@ class ItemCollection(happy.service.Service):
             if item.valid == 1 and item.type == 51:
                 yield item
 
+    @property
+    def gold(self):
+        """_summary_
 
+        Returns:
+            _type_: _description_
+        """
+        return self.mem.read_int(0x00F4C3EC)
     
     def put(self, item: Item, position: int):
         """拿起item放到指定position
