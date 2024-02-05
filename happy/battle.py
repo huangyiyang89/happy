@@ -27,17 +27,17 @@ class Battle(happy.service.Service):
         return self.mem.read_short(0x0072B9D0) > 0
 
     @property
-    def is_player_turn(self):
+    def is_player_turn(self)-> bool:
         """人物行动时为1 宠物行动时为4 行动结束为5 登出以后再进游戏都为1"""
         return self.mem.read_int(0x00598974) == 1 and self.mem.read_short(0x0072B9D0) ==3
 
     @property
-    def is_pet_turn(self):
+    def is_pet_turn(self)-> bool:
         """人物行动时为1 宠物行动时为4 行动结束为5 登出以后再进游戏都为1"""
         return self.mem.read_int(0x00598974) == 4 and self.mem.read_short(0x0072B9D0) ==3
     
     @property
-    def is_pet_second_turn(self):
+    def is_pet_second_turn(self)-> bool:
         """_summary_
 
         Returns:
@@ -46,7 +46,7 @@ class Battle(happy.service.Service):
         return self.is_pet_turn and  self.mem.read_int(0x005988F4) == 1
 
     @property
-    def is_player_second_turn(self):
+    def is_player_second_turn(self)-> bool:
         """_summary_
 
         Returns:

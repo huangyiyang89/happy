@@ -159,9 +159,10 @@ class Map(happy.service.Service):
                             else:
                                 self.map_flag_data[i][j] = 0
                 self.exits = sorted(self.exits, key=lambda x: x[2])
-                
+                return True
         except FileNotFoundError:
             print("未能打开地图文件")
+            return False
 
     def paint_map(self):
         """_summary_"""
@@ -191,6 +192,9 @@ class Map(happy.service.Service):
                     result.append((nx, ny, node))
 
             return result
+
+        if len(self.map_flag_data) == 0:
+            return None
 
         goal = (x, y)
 

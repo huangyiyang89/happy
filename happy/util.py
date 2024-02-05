@@ -100,7 +100,7 @@ def execute_every_second(second):
 
 
 def timer(func):
-    """_summary_
+    """函数计时器
 
     Args:
         func (_type_): _description_

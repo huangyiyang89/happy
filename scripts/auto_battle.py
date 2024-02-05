@@ -106,7 +106,7 @@ class Strategy:
             return
 
         if cg.player.hp_per<40:
-            drug = next(cg.items.drugs)
+            drug = next(cg.items.drugs,None)
             if drug:
                 cg.player.use_battle_item(drug,cg.player)
                 return
@@ -153,11 +153,13 @@ class Strategy:
         guard_counter = pet.get_skill("崩擊")
         enemies_count = len(cg.battle.units.enemies)
         friends_count = len(cg.battle.units.friends)
+        first_skill = pet.skills[0]
         if enemies_count < 4 and guard_counter and friends_count>6 and bet(50) is not None:
             pet.cast(guard_counter, target)
             return
 
-        pet.attack(target)
+        pet.cast(first_skill,target)
+        #pet.attack(target)
 
 
 class ChuanJiao(Strategy):
