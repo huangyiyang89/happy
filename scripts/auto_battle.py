@@ -154,7 +154,7 @@ class Strategy:
         enemies_count = len(cg.battle.units.enemies)
         friends_count = len(cg.battle.units.friends)
         first_skill = pet.skills[0]
-        if enemies_count < 4 and guard_counter and friends_count>6 and bet(50) is not None:
+        if enemies_count < 4 and guard_counter and friends_count>6 and bet(50):
             pet.cast(guard_counter, target)
             return
 

@@ -47,10 +47,10 @@ class Script(happy.Script):
 
         # 德威特岛
         if cg.map.id == 30001:
-            cg.go_if(211,344,156,339,156,343)
-            cg.go_if(156,343,153,315)
-            cg.go_if(153,315,122,306)
-            cg.go_if(122,306,129,295)
+            cg.go_if(211, 344, 156, 339, 156, 343)
+            cg.go_if(156, 343, 153, 315)
+            cg.go_if(153, 315, 122, 306)
+            cg.go_if(122, 306, 129, 295)
 
         # 里洞（外）
         if cg.map.id == 32511:
@@ -62,30 +62,35 @@ class Script(happy.Script):
         if "地下" in cg.map.name:
             # cg.map.read_data()
             if len(cg.map.exits) < 2:
-            #     e1 = random.randint(0, cg.map.width_east)
-            #     e2 = random.randint(0, cg.map.width_east)
-            #     s1 = random.randint(0, cg.map.height_south)
-            #     s2 = random.randint(0, cg.map.height_south)
-            #     cg._decode_send(
-            #         f"UUN 1 {b62(cg.map.id)} {b62(e1)} {b62(s1)} {b62(e2)} {b62(s2)}"
-            #     )
+                #     e1 = random.randint(0, cg.map.width_east)
+                #     e2 = random.randint(0, cg.map.width_east)
+                #     s1 = random.randint(0, cg.map.height_south)
+                #     s2 = random.randint(0, cg.map.height_south)
+                #     cg._decode_send(
+                #         f"UUN 1 {b62(cg.map.id)} {b62(e1)} {b62(s1)} {b62(e2)} {b62(s2)}"
+                #     )
                 # cg._decode_send(
                 #         f"UUN 1 {b62(cg.map.id)} {cg.map.x} {cg.map.y} {b62(cg.map.width_east)} {b62(cg.map.height_south)}"
                 # )
-                cg.go_astar(cg.map.x+random.randint(-5,5),cg.map.y+random.randint(-5,5))
+                cg.go_astar(
+                    cg.map.x + random.randint(-5, 5), cg.map.y + random.randint(-5, 5)
+                )
             else:
                 if cg.map.exits[-1][2] == 17955:
-                    #cg.map.map_flag_data[cg.map.exits[0][1]][cg.map.exits[0][0]]= 0 #上一層樓梯設置不可到達防止來回上下樓
+                    # cg.map.map_flag_data[cg.map.exits[0][1]][cg.map.exits[0][0]]= 0 #上一層樓梯設置不可到達防止來回上下樓
                     cg.go_astar(cg.map.exits[-1][0], cg.map.exits[-1][1])
                 else:
                     # 到达最后一层
-                    cg.go_astar(cg.map.x+random.randint(-5,5),cg.map.y+random.randint(-5,5))
+                    cg.go_astar(
+                        cg.map.x + random.randint(-5, 5),
+                        cg.map.y + random.randint(-5, 5),
+                    )
 
         if "底層" in cg.map.name:
             if cg.map.x == 13:
-                cg.go_to(12,6)
+                cg.go_to(12, 6)
             else:
-                cg.go_to(13,6)
+                cg.go_to(13, 6)
 
     def go_to_heal(self, cg: happy.Cg):
         """_summary_
@@ -136,7 +141,7 @@ class Script(happy.Script):
             if (cg.map.x, cg.map.y) == (133, 133):
                 cg.right_click("A")
                 cg.sell()
-                self.sell_record.append((cg.items.gold,time.gmtime()))
+                self.sell_record.append((cg.items.gold, time.gmtime()))
             return
 
     def on_enable(self, enable):
@@ -147,9 +152,4 @@ class Script(happy.Script):
         if "地下" in cg.map.name:
             cg.map.read_data()
             if len(cg.map.exits) < 2:
-                    e1 = random.randint(0, cg.map.width_east)
-                    e2 = random.randint(0, cg.map.width_east)
-                    s1 = random.randint(0, cg.map.height_south)
-                    s2 = random.randint(0, cg.map.height_south)
-                    cg._decode_send(
-                        f"UUN 1 {b62(cg.map.id)} {b62(e1)} {b62(s1)} {b62(e2)} {b62(s2)}")
+                cg.map.request_map_data()

@@ -2,6 +2,7 @@
 import os
 import struct
 import heapq
+import random
 from happy.mem import CgMem
 from happy.util import b62, timer
 import happy.service
@@ -143,6 +144,8 @@ class Map(happy.service.Service):
                             self.exits.append((j, i, object_id))
                             print(f"找到场景转换坐标={j},{i},object_id={object_id}")
 
+                        # if object_id:
+                        #     print(j,i,object_id)
                         # if flag == 0:
                         #     self.map_flag_data[i][j] = 0
 
@@ -237,6 +240,17 @@ class Map(happy.service.Service):
         #         self.file_last_mtime = mtime
         # except FileNotFoundError:
         #     print("dat文件未找到。")
+
+    def request_map_data(self):
+        """_summary_
+        """
+        e1 = random.randint(0, self.width_east)
+        e2 = random.randint(0, self.width_east)
+        s1 = random.randint(0, self.height_south)
+        s2 = random.randint(0, self.height_south)
+        self._decode_send(
+                f"UUN 1 {b62(self.id)} {b62(e1)} {b62(s1)} {b62(e2)} {b62(s2)}"
+            )
 
     def read_info_data(self):
         # GraphicInfo_66.bin 4100+

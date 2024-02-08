@@ -125,7 +125,7 @@ class BattlePet(Service, Pet):
         Pet.__init__(self, pet.index, pet.name, pet.battle_flag, pet.skills)
 
     def _execute_pet_command(self, pet_battle_order="W|0|E"):
-        guard = self.get_skill("防禦")
+        guard = self.get_skill("防禦","明鏡止水","座騎")
         flag = 1 << guard.index
         self.mem.write_short(0x005988B0, flag)
         # hook

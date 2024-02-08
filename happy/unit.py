@@ -206,7 +206,10 @@ class UnitCollection(Service):
 
         # 检查友方10个位置，返回单位存在且强力位符合条件的目标数大于3的位置，没有返回-1
         ret_enemy = None
-        for enemy in self.enemies:
+        # 随机寻找目标
+        shuffled_list = self.enemies.copy()  # 首先複製原始列表
+        random.shuffle(shuffled_list)    # 然後打亂新列表
+        for enemy in shuffled_list:
             count = UnitCollection.count_set_bits(units_bit & crosses[enemy.position-10])
             if count == 4:
                 return enemy
