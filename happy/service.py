@@ -45,7 +45,7 @@ class Service:
 
         # 延迟防止不触发
         time.sleep(0.1)
-        print(content)
+        #print(content)
 
     def decode_export(self):
         """导出加密表"""

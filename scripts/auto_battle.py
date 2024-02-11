@@ -51,7 +51,7 @@ class Script(happy.Script):
             self.strategy.player_action(cg)
         else:
             if a != b:
-                print("waiting anime...")
+                pass
             else:
                 time.sleep(1)
                 self.strategy.player_action(cg)

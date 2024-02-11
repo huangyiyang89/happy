@@ -232,7 +232,8 @@ class Cg(Service):
                     f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} {self.pets.battle_pet.index+1}"
                 )
         else:
-            print("nothing to eat")
+            pass
+            #print("nothing to eat")
 
     def eat_drug(self, lose_hp=400, excepts=""):
         """对玩家使用物品栏中第一个类型为药的物品"""
@@ -247,7 +248,8 @@ class Cg(Service):
                     f"iVfo {self.map.x_62} {self.map.y_62} {first_drug.index_62} 0"
                 )
             else:
-                print("nothing to eat")
+                pass
+                #print("nothing to eat")
 
     def use_item(self, item: Item):
         """_summary_

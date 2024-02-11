@@ -126,7 +126,7 @@ class Player(happy.service.Service):
         # hook
         self.mem.write_string(addr_player_buffer, player_battle_order + "\0")
         self.mem.write_bytes(addr_player_flag, bytes.fromhex("90 90"), 2)
-        print(player_battle_order)
+        #print(player_battle_order)
         time.sleep(0.1)
         # 还原
         self.mem.write_string(addr_player_buffer, "G\0")

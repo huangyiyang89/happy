@@ -3,8 +3,9 @@ import os
 import struct
 import heapq
 import random
+import time
 from happy.mem import CgMem
-from happy.util import b62, timer
+from happy.util import b62
 import happy.service
 from happy.dict import map_info_dict
 
@@ -89,11 +90,9 @@ class Map(happy.service.Service):
         """
         return self.mem.get_directory() + "\\" + self.mem.read_string(0x0018CCCC)
 
-    @timer
+    
     def read_data(self):
         """_summary_"""
-        print("start read map data")
-
         try:
             with open(self.file_path, "rb") as file:
                 header = file.read(20)
@@ -142,7 +141,7 @@ class Map(happy.service.Service):
 
                         if flag == 49155:
                             self.exits.append((j, i, object_id))
-                            print(f"找到场景转换坐标={j},{i},object_id={object_id}")
+                            #print(f"找到场景转换坐标={j},{i},object_id={object_id}")
 
                         # if object_id:
                         #     print(j,i,object_id)
@@ -230,6 +229,9 @@ class Map(happy.service.Service):
         if self.id != self.last_map_id:
             #self.read_data()
             self.last_map_id = self.id
+            print(f"切换地图至 {self.name} {self.file_path}")
+            time.sleep(1)
+            self.request_map_data()
 
         # try:
         #     # 获取文件的最后修改时间
@@ -244,6 +246,7 @@ class Map(happy.service.Service):
     def request_map_data(self):
         """_summary_
         """
+        self.read_data()
         e1 = random.randint(0, self.width_east)
         e2 = random.randint(0, self.width_east)
         s1 = random.randint(0, self.height_south)

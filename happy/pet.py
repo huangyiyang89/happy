@@ -134,7 +134,7 @@ class BattlePet(Service, Pet):
         self.mem.write_bytes(0x00CDA984, bytes.fromhex("02"), 1)
         # 骑乘
         self.mem.write_bytes(0x00475D92, bytes.fromhex("90 90"), 2)
-        print(pet_battle_order)
+        #print(pet_battle_order)
         time.sleep(0.1)
         # 还原
         self.mem.write_string(0x00543EC0, r"W|%X|%X" + "\0")

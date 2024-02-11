@@ -112,7 +112,6 @@ class Cgframe(customtkinter.CTkFrame):
         try:
             self.cg.update()
             self.player_name_label.configure(text=self.cg.player.name)
-            self.after(100, self.refresh)
         except Exception as e:  # pylint: disable=broad-except
             if "Could not read memory" in str(e):
                 self.destroy()
@@ -120,7 +119,8 @@ class Cgframe(customtkinter.CTkFrame):
             else :
                 print(e)
                 traceback.print_exc()
-
+        self.after(100, self.refresh)
+    
     def switch_script_enable(self, script):
         """_summary_"""
         script.enable = not script.enable

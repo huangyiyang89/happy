@@ -18,3 +18,7 @@ class Script(happy.script.Script):
 
     def on_not_battle(self, cg):
         cg.mem.write_int(0x00F4C460,self.speed)
+
+    
+    def on_update(self, cg):
+        return super().on_update(cg)
