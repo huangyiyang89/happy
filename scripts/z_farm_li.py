@@ -27,7 +27,11 @@ class Script(happy.Script):
             self.go_to_sell(cg)
             return
 
-        if cg.player.hp_per < 30 or cg.player.mp < 30 or cg.pets.battle_pet.hp_per < 30:
+        if cg.player.mp_per !=100 and (cg.map.id == 30010 or cg.map.id == 30105):
+            self.go_to_heal(cg)
+            return
+
+        if cg.player.hp_per < 30 or cg.player.mp < 50 or cg.pets.battle_pet.hp_per < 30:
             self.go_to_heal(cg)
             return
 

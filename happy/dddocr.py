@@ -1,35 +1,38 @@
 # coding=utf-8
-import warnings
 
-warnings.filterwarnings("ignore")
+
 import io
 import os
+import sys
 import base64
-import json
 import pathlib
 import onnxruntime
-from PIL import Image, ImageChops
+from PIL import Image
 import numpy as np
-import cv2
-import sys
 
 
 def base64_to_image(img_base64):
+    """_summary_
+
+    Args:
+        img_base64 (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     img_data = base64.b64decode(img_base64)
     return Image.open(io.BytesIO(img_data))
 
 
-def get_img_base64(single_image_path):
-    with open(single_image_path, "rb") as fp:
-        img_base64 = base64.b64encode(fp.read())
-        return img_base64.decode()
-
-
-class TypeError(Exception):
-    pass
-
-
 def png_rgba_black_preprocess(img: Image):
+    """_summary_
+
+    Args:
+        img (Image): _description_
+
+    Returns:
+        _type_: _description_
+    """
     width = img.width
     height = img.height
     image = Image.new("RGB", size=(width, height), color=(255, 255, 255))
@@ -37,30 +40,19 @@ def png_rgba_black_preprocess(img: Image):
     return image
 
 
-class DdddOcr(object):
-    def __init__(
-        self,
-        ocr: bool = True,
-        det: bool = False,
-        old: bool = False,
-        beta: bool = False,
-        use_gpu: bool = False,
-        device_id: int = 0,
-        show_ad=True,
-        import_onnx_path: str = "",
-        charsets_path: str = "",
-    ):
-        if show_ad:
-            pass
-        if not hasattr(Image, "ANTIALIAS"):
-            setattr(Image, "ANTIALIAS", Image.LANCZOS)
+class DdddOcr:
+    """_summary_
+
+    Args:
+        object (_type_): _description_
+    """
+
+    def __init__(self):
         self.use_import_onnx = False
         self.__word = False
         self.__resize = []
         self.__channel = 1
         self.__graph_path = os.path.join(os.path.dirname(sys.argv[0]), "common.onnx")
-        # self.__graph_path = os.path.join(os.path.dirname(__file__), 'common.onnx')
-        print(self.__graph_path)
         self.det = False
         self.__charset = [
             "",
@@ -8274,161 +8266,20 @@ class DdddOcr(object):
             "怫",
             "荘",
         ]
-        self.__providers = ["CPUExecutionProvider"]
         self.__ort_session = onnxruntime.InferenceSession(
-            self.__graph_path, providers=self.__providers
+            self.__graph_path, providers=["CPUExecutionProvider"]
         )
 
-    def preproc(self, img, input_size, swap=(2, 0, 1)):
-        if len(img.shape) == 3:
-            padded_img = (
-                np.ones((input_size[0], input_size[1], 3), dtype=np.uint8) * 114
-            )
-        else:
-            padded_img = np.ones(input_size, dtype=np.uint8) * 114
-
-        r = min(input_size[0] / img.shape[0], input_size[1] / img.shape[1])
-        resized_img = cv2.resize(
-            img,
-            (int(img.shape[1] * r), int(img.shape[0] * r)),
-            interpolation=cv2.INTER_LINEAR,
-        ).astype(np.uint8)
-        padded_img[: int(img.shape[0] * r), : int(img.shape[1] * r)] = resized_img
-
-        padded_img = padded_img.transpose(swap)
-        padded_img = np.ascontiguousarray(padded_img, dtype=np.float32)
-        return padded_img, r
-
-    def demo_postprocess(self, outputs, img_size, p6=False):
-        grids = []
-        expanded_strides = []
-
-        if not p6:
-            strides = [8, 16, 32]
-        else:
-            strides = [8, 16, 32, 64]
-
-        hsizes = [img_size[0] // stride for stride in strides]
-        wsizes = [img_size[1] // stride for stride in strides]
-
-        for hsize, wsize, stride in zip(hsizes, wsizes, strides):
-            xv, yv = np.meshgrid(np.arange(wsize), np.arange(hsize))
-            grid = np.stack((xv, yv), 2).reshape(1, -1, 2)
-            grids.append(grid)
-            shape = grid.shape[:2]
-            expanded_strides.append(np.full((*shape, 1), stride))
-
-        grids = np.concatenate(grids, 1)
-        expanded_strides = np.concatenate(expanded_strides, 1)
-        outputs[..., :2] = (outputs[..., :2] + grids) * expanded_strides
-        outputs[..., 2:4] = np.exp(outputs[..., 2:4]) * expanded_strides
-
-        return outputs
-
-    def nms(self, boxes, scores, nms_thr):
-        """Single class NMS implemented in Numpy."""
-        x1 = boxes[:, 0]
-        y1 = boxes[:, 1]
-        x2 = boxes[:, 2]
-        y2 = boxes[:, 3]
-
-        areas = (x2 - x1 + 1) * (y2 - y1 + 1)
-        order = scores.argsort()[::-1]
-
-        keep = []
-        while order.size > 0:
-            i = order[0]
-            keep.append(i)
-            xx1 = np.maximum(x1[i], x1[order[1:]])
-            yy1 = np.maximum(y1[i], y1[order[1:]])
-            xx2 = np.minimum(x2[i], x2[order[1:]])
-            yy2 = np.minimum(y2[i], y2[order[1:]])
-
-            w = np.maximum(0.0, xx2 - xx1 + 1)
-            h = np.maximum(0.0, yy2 - yy1 + 1)
-            inter = w * h
-            ovr = inter / (areas[i] + areas[order[1:]] - inter)
-
-            inds = np.where(ovr <= nms_thr)[0]
-            order = order[inds + 1]
-
-        return keep
-
-    def multiclass_nms_class_agnostic(self, boxes, scores, nms_thr, score_thr):
-        """Multiclass NMS implemented in Numpy. Class-agnostic version."""
-        cls_inds = scores.argmax(1)
-        cls_scores = scores[np.arange(len(cls_inds)), cls_inds]
-
-        valid_score_mask = cls_scores > score_thr
-        if valid_score_mask.sum() == 0:
-            return None
-        valid_scores = cls_scores[valid_score_mask]
-        valid_boxes = boxes[valid_score_mask]
-        valid_cls_inds = cls_inds[valid_score_mask]
-        keep = self.nms(valid_boxes, valid_scores, nms_thr)
-        if keep:
-            dets = np.concatenate(
-                [
-                    valid_boxes[keep],
-                    valid_scores[keep, None],
-                    valid_cls_inds[keep, None],
-                ],
-                1,
-            )
-        return dets
-
-    def multiclass_nms(self, boxes, scores, nms_thr, score_thr):
-        """Multiclass NMS implemented in Numpy"""
-        return self.multiclass_nms_class_agnostic(boxes, scores, nms_thr, score_thr)
-
-    def get_bbox(self, image_bytes):
-        img = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), cv2.IMREAD_COLOR)
-
-        im, ratio = self.preproc(img, (416, 416))
-        ort_inputs = {self.__ort_session.get_inputs()[0].name: im[None, :, :, :]}
-        output = self.__ort_session.run(None, ort_inputs)
-        predictions = self.demo_postprocess(output[0], (416, 416))[0]
-        boxes = predictions[:, :4]
-        scores = predictions[:, 4:5] * predictions[:, 5:]
-
-        boxes_xyxy = np.ones_like(boxes)
-        boxes_xyxy[:, 0] = boxes[:, 0] - boxes[:, 2] / 2.0
-        boxes_xyxy[:, 1] = boxes[:, 1] - boxes[:, 3] / 2.0
-        boxes_xyxy[:, 2] = boxes[:, 0] + boxes[:, 2] / 2.0
-        boxes_xyxy[:, 3] = boxes[:, 1] + boxes[:, 3] / 2.0
-        boxes_xyxy /= ratio
-
-        pred = self.multiclass_nms(boxes_xyxy, scores, nms_thr=0.45, score_thr=0.1)
-        try:
-            final_boxes = pred[:, :4].tolist()
-            result = []
-            for b in final_boxes:
-                if b[0] < 0:
-                    x_min = 0
-                else:
-                    x_min = int(b[0])
-                if b[1] < 0:
-                    y_min = 0
-                else:
-                    y_min = int(b[1])
-                if b[2] > img.shape[1]:
-                    x_max = int(img.shape[1])
-                else:
-                    x_max = int(b[2])
-                if b[3] > img.shape[0]:
-                    y_max = int(img.shape[0])
-                else:
-                    y_max = int(b[3])
-                result.append([x_min, y_min, x_max, y_max])
-        except Exception as e:
-            return []
-        return result
-
     def classification(self, img, png_fix: bool = False):
-        if self.det:
-            raise TypeError("当前识别类型为目标检测")
-        if not isinstance(img, (bytes, str, pathlib.PurePath, Image.Image)):
-            raise TypeError("未知图片类型")
+        """_summary_
+
+        Args:
+            img (_type_): _description_
+            png_fix (bool, optional): _description_. Defaults to False.
+
+        Returns:
+            _type_: _description_
+        """
         if isinstance(img, bytes):
             image = Image.open(io.BytesIO(img))
         elif isinstance(img, Image.Image):
@@ -8440,13 +8291,14 @@ class DdddOcr(object):
             image = Image.open(img)
         if not self.use_import_onnx:
             image = image.resize(
-                (int(image.size[0] * (64 / image.size[1])), 64), Image.ANTIALIAS
+                (int(image.size[0] * (64 / image.size[1])), 64),
+                Image.Resampling.LANCZOS,
             ).convert("L")
         else:
             if self.__resize[0] == -1:
                 if self.__word:
                     image = image.resize(
-                        (self.__resize[1], self.__resize[1]), Image.ANTIALIAS
+                        (self.__resize[1], self.__resize[1]), Image.Resampling.LANCZOS
                     )
                 else:
                     image = image.resize(
@@ -8454,11 +8306,11 @@ class DdddOcr(object):
                             int(image.size[0] * (self.__resize[1] / image.size[1])),
                             self.__resize[1],
                         ),
-                        Image.ANTIALIAS,
+                        Image.Resampling.LANCZOS,
                     )
             else:
                 image = image.resize(
-                    (self.__resize[0], self.__resize[1]), Image.ANTIALIAS
+                    (self.__resize[0], self.__resize[1]), Image.Resampling.LANCZOS
                 )
             if self.__channel == 1:
                 image = image.convert("L")
@@ -8499,118 +8351,3 @@ class DdddOcr(object):
                     result.append(self.__charset[item])
 
         return "".join(result)
-
-    def detection(self, img_bytes: bytes = None, img_base64: str = None):
-        if not self.det:
-            raise TypeError("当前识别类型为文字识别")
-        if not img_bytes:
-            img_bytes = base64.b64decode(img_base64)
-        result = self.get_bbox(img_bytes)
-        return result
-
-    def get_target(self, img_bytes: bytes = None):
-        image = Image.open(io.BytesIO(img_bytes))
-        w, h = image.size
-        starttx = 0
-        startty = 0
-        end_x = 0
-        end_y = 0
-        for x in range(w):
-            for y in range(h):
-                p = image.getpixel((x, y))
-                if p[-1] == 0:
-                    if startty != 0 and end_y == 0:
-                        end_y = y
-
-                    if starttx != 0 and end_x == 0:
-                        end_x = x
-                else:
-                    if startty == 0:
-                        startty = y
-                        end_y = 0
-                    else:
-                        if y < startty:
-                            startty = y
-                            end_y = 0
-            if starttx == 0 and startty != 0:
-                starttx = x
-            if end_y != 0:
-                end_x = x
-        return image.crop([starttx, startty, end_x, end_y]), starttx, startty
-
-    def slide_match(
-        self,
-        target_bytes: bytes = None,
-        background_bytes: bytes = None,
-        simple_target: bool = False,
-        flag: bool = False,
-    ):
-        if not simple_target:
-            try:
-                target, target_x, target_y = self.get_target(target_bytes)
-                target = cv2.cvtColor(np.asarray(target), cv2.IMREAD_ANYCOLOR)
-            except SystemError as e:
-                # SystemError: tile cannot extend outside image
-                if flag:
-                    raise e
-                return self.slide_match(
-                    target_bytes=target_bytes,
-                    background_bytes=background_bytes,
-                    simple_target=True,
-                    flag=True,
-                )
-        else:
-            target = cv2.imdecode(
-                np.frombuffer(target_bytes, np.uint8), cv2.IMREAD_ANYCOLOR
-            )
-            target_y = 0
-            target_x = 0
-
-        background = cv2.imdecode(
-            np.frombuffer(background_bytes, np.uint8), cv2.IMREAD_ANYCOLOR
-        )
-
-        background = cv2.Canny(background, 100, 200)
-        target = cv2.Canny(target, 100, 200)
-
-        background = cv2.cvtColor(background, cv2.COLOR_GRAY2RGB)
-        target = cv2.cvtColor(target, cv2.COLOR_GRAY2RGB)
-
-        res = cv2.matchTemplate(background, target, cv2.TM_CCOEFF_NORMED)
-        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-        h, w = target.shape[:2]
-        bottom_right = (max_loc[0] + w, max_loc[1] + h)
-        return {
-            "target_y": target_y,
-            "target": [
-                int(max_loc[0]),
-                int(max_loc[1]),
-                int(bottom_right[0]),
-                int(bottom_right[1]),
-            ],
-        }
-
-    def slide_comparison(
-        self, target_bytes: bytes = None, background_bytes: bytes = None
-    ):
-        target = Image.open(io.BytesIO(target_bytes)).convert("RGB")
-        background = Image.open(io.BytesIO(background_bytes)).convert("RGB")
-        image = ImageChops.difference(background, target)
-        background.close()
-        target.close()
-        image = image.point(lambda x: 255 if x > 80 else 0)
-        start_y = 0
-        start_x = 0
-        for i in range(0, image.width):
-            count = 0
-            for j in range(0, image.height):
-                pixel = image.getpixel((i, j))
-                if pixel != (0, 0, 0):
-                    count += 1
-                if count >= 5 and start_y == 0:
-                    start_y = j - 5
-
-            if count >= 5:
-                start_x = i + 2
-                break
-        return {"target": [start_x, start_y]}

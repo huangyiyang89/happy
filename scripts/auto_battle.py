@@ -106,7 +106,7 @@ class Strategy:
         if target is None:
             return
 
-        if cg.player.hp_per<30:
+        if cg.player.hp_per<60:
             drug = next(cg.items.drugs,None)
             if drug:
                 cg.player.use_battle_item(drug,cg.player)

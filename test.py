@@ -1,14 +1,9 @@
 import happy
-from happy.util import b62
+from happy.util import b62,solve_captcha
 import time 
 
 #cg.right_click('A')
 
 #cg.go_send_call('aa')
 #cg.go_send_call('e')
-import happy.dddocr
-dddocr = happy.dddocr.DdddOcr()
-with open("code.png", "rb") as f:
-    image_bytes = f.read()
-    verifycode = dddocr.classification(image_bytes)
-    print(verifycode)
+solve_captcha("https://www.bluecg.net/plugin.php?id=gift:v2&ac=mlbbwyn1989&time=1707909443")
