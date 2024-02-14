@@ -148,7 +148,10 @@ class Script(happy.Script):
         self.sell_record = []
 
     def on_update(self, cg: happy.Cg):
-        cg.send_wechat_notification()
+        cg.solve_if_captch()
+        ka = cg.items.find(item_name='卡片')
+        if ka:
+            cg.drop_item(ka)
         if "地下" in cg.map.name:
             cg.map.read_data()
             if len(cg.map.exits) < 2:

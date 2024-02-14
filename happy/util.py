@@ -2,6 +2,13 @@
 from functools import wraps
 import time
 import random
+import re
+import cloudscraper
+import capsolver
+from PIL import Image
+from PIL import ImageSequence
+from happy.dddocr import DdddOcr
+
 
 
 def merge_path(path):
@@ -112,3 +119,93 @@ def timer(func):
         print(f"函数 {func.__name__} 运行时间: {end_time - start_time} 秒")
         return result
     return wrapper
+
+def solve_captcha(url) -> bool:
+    """_summary_
+
+    Args:
+        url (_type_): _description_
+    """
+    scraper = cloudscraper.create_scraper()
+    scraper.headers["Cache-Control"] = "no-cache"
+
+    # request main_page
+    main_page_text = scraper.get(url).text
+    matches = re.findall(r'data-sitekey="([^"]+)"', main_page_text)
+    if matches:
+        print("data-sitekey:", matches[0])
+        sitekey = matches[0]
+    else:
+        print("页面有误或反爬检测")
+        return False
+
+    matches = re.findall(r'updateseccode\(\'([^"]+)\',', main_page_text)
+    if matches:
+        print("sid:", matches[0])
+        sid = matches[0]
+    else:
+        print("页面有误或反爬检测")
+        return False
+
+    # request captcha image
+    captcha_url = "https://www.bluecg.net/misc.php?mod=seccode&idhash=" + sid
+    scraper.headers["Referer"] = url
+    for i in range(5):
+        captcha_response = scraper.get(captcha_url)
+        captcha_image_buffer = captcha_response.content
+        with open("code.gif", "wb") as f:
+            f.write(captcha_image_buffer)
+        img = Image.open("code.gif")
+        max_duration = 0
+        for frame in ImageSequence.Iterator(img):
+            duration = frame.info["duration"]
+            if duration > max_duration:
+                frame.save("code.png")
+                max_duration = duration
+
+        # recognize captcha image
+        dddocr = DdddOcr()
+        with open("code.png", "rb") as f:
+            image_bytes = f.read()
+            verifycode = dddocr.classification(image_bytes)
+
+        checked_res = scraper.get(
+            f"https://www.bluecg.net/misc.php?mod=seccode&action=check&inajax=1&modid=plugin::gift&secverify={verifycode}"
+        ).text
+
+        if "succeed" in checked_res:
+            print("验证码识别成功")
+            break
+        print(f"验证码识别错误，尝试第{i+1}次")
+        if i==4:
+            return False
+
+    # solve recaptcha
+    capsolver.api_key = "CAP-0C304B4D66688AA0ABE2C8842DBFEAD3"
+    solution = capsolver.solve(
+        {
+            "type": "ReCaptchaV2TaskProxyLess",
+            "websiteURL": url,
+            "websiteKey": sitekey,
+        }
+    )
+
+    g_recaptcha_response = solution["gRecaptchaResponse"]
+    user_agent = solution["userAgent"]
+    if not g_recaptcha_response or not user_agent:
+        print("capsolver not work")
+        return False
+
+    print(g_recaptcha_response)
+    print(user_agent)
+    data = {
+        "g-recaptcha-response": g_recaptcha_response,
+        "seccodehash": sid,
+        "seccodemodid": "plugin::gift",
+        "seccodeverify": verifycode,
+        "submit": "",
+    }
+
+    res = scraper.post(url, data=data)
+    print(res)
+    return True

@@ -1,9 +1,11 @@
 """player class"""
+
 import time
 import happy.service
 import happy.unit
 import happy.skill
 from happy.item import Item
+
 
 class Player(happy.service.Service):
     """_summary_
@@ -27,8 +29,7 @@ class Player(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        s = self.mem.read_string(0x00CB27EC)
-        return int(s[:4])
+        return self.mem.read_xor_value(0x00F4C30C)
 
     @property
     def hp_max(self):
@@ -37,8 +38,7 @@ class Player(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        s = self.mem.read_string(0x00CB27EC)
-        return int(s[5:])
+        return self.mem.read_xor_value(0x00F4C30C + 16)
 
     @property
     def hp_per(self):
@@ -47,8 +47,10 @@ class Player(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        return int(self.hp/self.hp_max*100)
-    
+        if self.hp_max:
+            return int(self.hp / self.hp_max * 100)
+        return 0
+
     @property
     def mp_per(self):
         """_summary_
@@ -56,7 +58,9 @@ class Player(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        return int(self.mp/self.mp_max*100)
+        if self.mp_max:
+            return int(self.mp / self.mp_max * 100)
+        return 0
 
     @property
     def mp(self):
@@ -65,8 +69,7 @@ class Player(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        s = self.mem.read_string(0x00CB7900)
-        return int(s[:4])
+        return self.mem.read_xor_value(0x00F4C30C + 32)
 
     @property
     def mp_max(self):
@@ -75,8 +78,7 @@ class Player(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        s = self.mem.read_string(0x00CB7900)
-        return int(s[5:])
+        return self.mem.read_xor_value(0x00F4C30C + 48)
 
     @property
     def position(self):
@@ -126,13 +128,15 @@ class Player(happy.service.Service):
         # hook
         self.mem.write_string(addr_player_buffer, player_battle_order + "\0")
         self.mem.write_bytes(addr_player_flag, bytes.fromhex("90 90"), 2)
-        #print(player_battle_order)
+        # print(player_battle_order)
         time.sleep(0.1)
         # 还原
         self.mem.write_string(addr_player_buffer, "G\0")
         self.mem.write_bytes(addr_player_flag, bytes.fromhex("74 5E"), 2)
 
-    def cast(self, skill: happy.skill.PlayerSkill, unit: happy.unit.Unit = None, use_level=11):
+    def cast(
+        self, skill: happy.skill.PlayerSkill, unit: happy.unit.Unit = None, use_level=11
+    ):
         """_summary_
 
         Args:

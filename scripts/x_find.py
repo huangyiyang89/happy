@@ -15,11 +15,14 @@ class Script(happy.Script):
     def on_not_moving(self, cg: happy.Cg):
         if "黃金迷宮一階段地下49層" in cg.map.name:
             cg.go_astar(cg.map.exits[0][0], cg.map.exits[0][1])
+        if "黃金迷宮二階段地下49層" in cg.map.name:
+            cg.go_astar(cg.map.exits[0][0], cg.map.exits[0][1])
+        if "龍之住處" in cg.map.name:
+            cg.go_astar(91,8)
 
         if len(cg.map.exits) > 1:
             cg.go_astar(cg.map.exits[-1][0], cg.map.exits[-1][1])
 
     def on_update(self, cg: happy.Cg):
-        cg.send_wechat_notification()
         if len(cg.map.exits) < 2:
             cg.map.request_map_data()

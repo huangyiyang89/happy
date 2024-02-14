@@ -229,8 +229,8 @@ class Map(happy.service.Service):
         if self.id != self.last_map_id:
             #self.read_data()
             self.last_map_id = self.id
-            print(f"切换地图至 {self.name} {self.file_path}")
             time.sleep(1)
+            print(f"切换地图至 {self.name} {self.file_path}")
             self.request_map_data()
 
         # try:

@@ -26,7 +26,8 @@ class Script(happy.Script):
         Args:
             cg (happy.core.Cg): _description_
         """
-
+        #cg.send_wechat_notification()
+    
     def on_battle(self, cg: happy.Cg):
         """_summary_
 
@@ -53,7 +54,7 @@ class Script(happy.Script):
             if a != b:
                 pass
             else:
-                time.sleep(1)
+                #time.sleep(1)
                 self.strategy.player_action(cg)
 
     def on_pet_turn(self, cg: happy.Cg):
@@ -105,7 +106,7 @@ class Strategy:
         if target is None:
             return
 
-        if cg.player.hp_per<40:
+        if cg.player.hp_per<30:
             drug = next(cg.items.drugs,None)
             if drug:
                 cg.player.use_battle_item(drug,cg.player)

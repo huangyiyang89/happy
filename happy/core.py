@@ -1,6 +1,7 @@
 """
 HappyCG
 """
+
 import threading
 import time
 import importlib
@@ -18,7 +19,7 @@ from happy.mem import CgMem
 from happy.battle import Battle
 from happy.service import Service
 from happy.item import Item, ItemCollection
-from happy.util import b62, merge_path
+from happy.util import b62, merge_path, solve_captcha
 import happy.pywinhandle
 
 
@@ -39,6 +40,7 @@ class Cg(Service):
         self._scripts = []
         self.is_closed = False
         self._last_captcha_code = ""
+        self.get_captcha()
 
     @staticmethod
     def open(name=""):
@@ -120,7 +122,7 @@ class Cg(Service):
         # 0046845D  原A3 C8 C2 C0 00 改90 90 90 90 90
         # 00468476  原89 0D C4 C2 C0 00 改90 90 90 90 90 90
         # 00C0C2C4 X 00C0C2C8 Y 00C0C2DC 置1
-        print(self.player.name + f"start going to {x} {y}")
+        # print(self.player.name + f"start going to {x} {y}")
         self.mem.write_bytes(0x0046845D, bytes.fromhex("90 90 90 90 90"), 5)
         self.mem.write_bytes(0x00468476, bytes.fromhex("90 90 90 90 90 90"), 6)
         self.mem.write_int(0x00C0C2C4, x)
@@ -177,6 +179,34 @@ class Cg(Service):
             self.go_to(x + random.randint(-2, 2), y + random.randint(-2, 2))
             self.map.read_data()
 
+    def go_send_call(
+        self,
+        direction=Literal[
+            "a",
+            "b",
+            "c",
+            "d",
+            "e",
+            "f",
+            "g",
+            "h",
+            "aa",
+            "bb",
+            "cc",
+            "dd",
+            "ee",
+            "ff",
+            "gg",
+            "hh",
+        ],
+    ):
+        """_summary_
+
+        Args:
+            direction (_type_, optional): _description_. Defaults to Literal["a", "b", "c", "d", "e", "f", "g", "h","aa", "bb", "cc", "dd", "ee", "ff", "gg", "hh"].
+        """
+        self._decode_send(f"zA {self.map.x_62} {self.map.y_62} {direction} 0")
+
     def load_script(self, file_path, module_name, class_name, enable=False):
         """_summary_
 
@@ -215,12 +245,19 @@ class Cg(Service):
             (food for food in self.items.foods if food.name not in excepts), None
         )
         if first_food is not None:
+
+            def open_box_if_no_food():
+                if first_food.count == 1:
+                    box = self.items.find_box(first_food.name)
+                    self.use_item(box)
+
             if self.player.mp_max - self.player.mp >= lose_mp:
                 self.use_item(first_food)
                 self.select_target()
                 self._decode_send(
                     f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} 0"
                 )
+                open_box_if_no_food()
             if (
                 self.pets.battle_pet.mp_max - self.pets.battle_pet.mp >= lose_mp
                 and self.pets.battle_pet.mp < 200
@@ -231,9 +268,7 @@ class Cg(Service):
                 self._decode_send(
                     f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} {self.pets.battle_pet.index+1}"
                 )
-        else:
-            pass
-            #print("nothing to eat")
+                open_box_if_no_food()
 
     def eat_drug(self, lose_hp=400, excepts=""):
         """对玩家使用物品栏中第一个类型为药的物品"""
@@ -249,7 +284,7 @@ class Cg(Service):
                 )
             else:
                 pass
-                #print("nothing to eat")
+                # print("nothing to eat")
 
     def use_item(self, item: Item):
         """_summary_
@@ -436,7 +471,12 @@ class Cg(Service):
             _type_: _description_
         """
         code = self.mem.read_string(0x00C32D4E, 10)
-        if code != "" and self._last_captcha_code != code:
+        if (
+            code != ""
+            and code.isdigit()
+            and len(code) == 10
+            and self._last_captcha_code != code
+        ):
             self._last_captcha_code = code
             return code
         return None
@@ -461,7 +501,7 @@ class Cg(Service):
                 "msgtype": "markdown",
                 "markdown": {
                     "content": f"### 账号: {self.account}\n### 验证链接:\n[https://www.bluecg.net/plugin.php?id=gift:v3&ac={self.account}&time={code}](https://www.bluecg.net/plugin.php?id=gift:v3&ac={self.account}&time={code})"
-                }
+                },
             }
             headers = {"Content-Type": "application/json"}
 
@@ -474,3 +514,20 @@ class Cg(Service):
                     "Failed to send Markdown message. Status code:",
                     response.status_code,
                 )
+
+    def solve_if_captch(self):
+        """_summary_"""
+        code = self.get_captcha()
+        if code is not None:
+            print("正在尝试解决验证码...")
+            url = f"https://www.bluecg.net/plugin.php?id=gift:v3v&ac={self.account}&time={code}"
+            success = solve_captcha(url)
+            print(success)
+
+    def drop_item(self, item: Item):
+        """_summary_
+
+        Args:
+            item (Item): _description_
+        """
+        self._decode_send(f"QpfE {self.map.x_62} {self.map.y_62} 0 {item.index_62}")

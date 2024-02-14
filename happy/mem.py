@@ -1,5 +1,7 @@
 """cgmem"""
+
 import pymem
+import pymem.process
 import psutil
 
 
@@ -20,7 +22,15 @@ class CgMem(pymem.Pymem):
 
     @staticmethod
     def list_cg_processes(process_name=b"bluecg.exe"):
-        """not write yet"""
+        """_summary_
+
+        Args:
+            process_name (bytes, optional): _description_. Defaults to b"bluecg.exe".
+
+        Yields:
+            _type_: _description_
+        """
+
         cg_list = pymem.process.list_processes()
         for process in cg_list:
             if process.szExeFile == process_name:
@@ -40,7 +50,7 @@ class CgMem(pymem.Pymem):
         return x ^ y
 
     def get_directory(self):
-        """_summary_
+        """获取cg.exe目录
 
         Returns:
             _type_: _description_

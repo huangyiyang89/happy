@@ -40,7 +40,7 @@ class Item:
     def __init__(self, index, bytes_data: bytes) -> None:
         self._index = index
         self._valid = struct.unpack("H", bytes_data[:2])[0]
-        self._name = bytes(filter(lambda x: x != 0x00, bytes_data[2:48])).decode(
+        self._name = bytes(bytes_data[2:48]).rstrip(b'\x00').decode(
             "big5", errors="ignore"
         )
         self._id = int.from_bytes(bytes_data[3136:3140], byteorder="little")
@@ -231,7 +231,7 @@ class ItemCollection(happy.service.Service):
         for item in self._items:
             if (
                 item.valid == 1
-                and (item.id == item_id or item.name == item_name)
+                and (item.id == item_id or item_name in item.name)
                 and item.count >= quantity
             ):
                 return item
@@ -248,5 +248,20 @@ class ItemCollection(happy.service.Service):
         """
         for item in self._items:
             if item.valid == 1 and "『" + name + "』" in item.name:
+                return item
+        return None
+
+
+    def find_food_box(self):
+        """_summary_
+
+        Args:
+            name (str, optional): _description_. Defaults to "".
+
+        Returns:
+            _type_: _description_
+        """
+        for item in self._items:
+            if item.valid == 1 and ("『壽喜鍋』" in item.name or "『魚翅湯』" in item.name):
                 return item
         return None
