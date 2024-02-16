@@ -185,6 +185,5 @@ pyu-data/
 *.ico
 
 # End of https://www.toptal.com/developers/gitignore/api/python
-common.onnx
 code.gif
 code.png
