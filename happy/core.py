@@ -40,7 +40,24 @@ class Cg(Service):
         self._scripts = []
         self.is_closed = False
         self._last_captcha_code = ""
+        self._update_callback = None
         self.get_captcha()
+
+    @property
+    def update_callback(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return self._update_callback
+
+    @update_callback.setter
+    def update_callback(self, func):
+        if callable(func):
+            self._update_callback = func
+        else:
+            raise ValueError("Callback must be a callable function")
 
     @staticmethod
     def open(name=""):
@@ -62,13 +79,14 @@ class Cg(Service):
 
     def _main_loop(self):
         """not used yet"""
-        try:
-            while self._is_running:
-                time.sleep(0.1)
+        
+        while self._is_running:
+            try:
                 self.update()
-        except Exception as e:  # pylint: disable=broad-except
-            print(e)
-            self.close()
+            except Exception as e:  # pylint: disable=broad-except
+                print(e)
+                time.sleep(5)
+                #self.close()
 
     def start_loop(self):
         """start main loop not used yet"""
@@ -81,8 +99,9 @@ class Cg(Service):
         """close not used yet"""
         if self._is_running:
             self._is_running = False
-        Cg.opened_cg_processes.remove(self.mem.process_id)
-        self.is_closed = True
+        if not self.is_closed:
+            self.is_closed = True
+            Cg.opened_cg_processes.remove(self.mem.process_id)
 
     def update(self):
         """update all children and trigger events"""
@@ -110,6 +129,9 @@ class Cg(Service):
                     script.on_not_battle(self)
                     if not self.is_moving:
                         script.on_not_moving(self)
+                        
+        # if self._update_callback:
+        #     self.update_callback(self)
 
     def go_to(self, x, y):
         """_summary_
@@ -175,7 +197,7 @@ class Cg(Service):
             path = merge_path(path)
             self.go_to(*path[1])
         else:
-            print("未找到路径")
+            # print("未找到路径")
             self.go_to(x + random.randint(-2, 2), y + random.randint(-2, 2))
             self.map.read_data()
 
@@ -308,7 +330,8 @@ class Cg(Service):
 
     def tp(self):
         """登出"""
-        self._decode_send("lO")
+        if not self.battle.is_fighting:
+            self._decode_send("lO")
 
     @property
     def is_moving(self) -> bool:
@@ -414,13 +437,15 @@ class Cg(Service):
         dialog_type = self.get_dialog_type()
         if dialog_type == 5:
             # npc_type = self.get_npc_type()
-            npc_id_62 = b62(self.get_npc_id())
+            # npc_id_62 = b62(self.get_npc_id())
             x62 = self.map.x_62
             y62 = self.map.y_62
             items_str = ""
             for item in self.items.bags_valids:
-                if "魔石" in item.name or "卡片" in item.name:
-                    items_str += str(item.index) + r"\\z" + str(item.count) + r"\\z"
+                if "魔石" in item.name or "卡片" in item.name or ("寵物鈴鐺" in item.name and item.count>=80) or ("紙人娃娃" in item.name and item.count>=80):
+                    count = 2 if "寵物鈴鐺" in item.name else item.count
+                    count = 1 if "紙人娃娃" in item.name else count
+                    items_str += str(item.index) + r"\\z" + str(count) + r"\\z"
             content = f"xD {x62} {y62} 5o {b62(unk)} 0 " + items_str[:-3]
             self._decode_send(content)
 
@@ -448,7 +473,7 @@ class Cg(Service):
 
         items_str = ""
         for ingredient in craft.ingredients:
-            item = self.items.find(ingredient.itemid, ingredient.name, ingredient.count)
+            item = self.items.find(ingredient.name, ingredient.count)
             if item is None:
                 box = self.items.find_box(ingredient.name)
                 if box:
@@ -524,10 +549,31 @@ class Cg(Service):
             success = solve_captcha(url)
             print(success)
 
-    def drop_item(self, item: Item):
+    def drop_item(self, *args):
+        """仍物品，*args可为Item示例或物品名string
+
+        Args:
+            item: item_name or Item instance
+        """
+        for item in args:
+            if isinstance(item,Item):
+                self._decode_send(f"QpfE {self.map.x_62} {self.map.y_62} 0 {item.index_62}")
+            if isinstance(item,str):
+                item_to_find = self.items.find(item_name=item)
+                if item_to_find:
+                    self._decode_send(f"QpfE {self.map.x_62} {self.map.y_62} 0 {item_to_find.index_62}")
+
+    def get_script(self,name):
         """_summary_
 
         Args:
-            item (Item): _description_
+            name (_type_): _description_
+
+        Returns:
+            _type_: _description_
         """
-        self._decode_send(f"QpfE {self.map.x_62} {self.map.y_62} 0 {item.index_62}")
+        for script in self._scripts:
+            if script.name == name:
+                return script
+        return None
+        

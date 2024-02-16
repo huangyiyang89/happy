@@ -81,6 +81,24 @@ class Player(happy.service.Service):
         return self.mem.read_xor_value(0x00F4C30C + 48)
 
     @property
+    def value_recovery(self):
+        """回复
+
+        Returns:
+            _type_: _description_
+        """
+        return self.mem.read_int(0x00F4C398)
+    
+    @property
+    def injury(self):
+        """受伤程度 25/50/75/100
+
+        Returns:
+            _type_: _description_
+        """
+        return self.mem.read_int(0x00F4C3E4)
+    
+    @property
     def position(self):
         """战斗中的位置
 

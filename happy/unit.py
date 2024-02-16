@@ -11,7 +11,7 @@ from happy.service import Service
 class Unit:
     """name,level,hp,maxhp,mp,maxmp"""
 
-    def __init__(self, data_list: [] = None) -> None:
+    def __init__(self, data_list: list = None) -> None:
         if isinstance(data_list, list) and len(data_list) == 12:
             self.position_hex = data_list[0]
             self.name = data_list[1]

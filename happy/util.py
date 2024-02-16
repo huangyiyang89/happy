@@ -1,5 +1,6 @@
 """Utils"""
 from functools import wraps
+import requests
 import time
 import random
 import re
@@ -209,3 +210,29 @@ def solve_captcha(url) -> bool:
     res = scraper.post(url, data=data)
     print(res)
     return True
+
+def send_wechat_notification(content):
+        """_summary_
+
+        Args:
+            content (_type_): _description_
+        """
+
+        url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=e0ce689b-5a47-4ae2-ab5e-0539268956d7"
+        payload = {
+            "msgtype": "markdown",
+            "markdown": {
+                "content": content
+            },
+        }
+        headers = {"Content-Type": "application/json"}
+
+        response = requests.post(url, json=payload, headers=headers, timeout=1000)
+
+        if response.status_code == 200:
+            print("Markdown message sent successfully.")
+        else:
+            print(
+                "Failed to send Markdown message. Status code:",
+                response.status_code,
+            )

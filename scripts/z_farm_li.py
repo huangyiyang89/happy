@@ -2,7 +2,7 @@
 import time
 import random
 import happy
-from happy.util import b62
+from happy.util import b62,send_wechat_notification
 
 
 class Script(happy.Script):
@@ -15,6 +15,7 @@ class Script(happy.Script):
     def __init__(self) -> None:
         super().__init__()
         self.name = "里洞魔石"
+        self.start_time = time.time
         self.sell_record = []
 
     def on_not_moving(self, cg: happy.Cg):
@@ -23,15 +24,16 @@ class Script(happy.Script):
         Args:
             cg (happy.core.Cg): _description_
         """
+
         if cg.items.blanks_count == 0:
             self.go_to_sell(cg)
             return
 
-        if cg.player.mp_per !=100 and (cg.map.id == 30010 or cg.map.id == 30105):
+        if cg.player.mp_per != 100 and cg.map.id in (30010, 30105):
             self.go_to_heal(cg)
             return
 
-        if cg.player.hp_per < 30 or cg.player.mp < 50 or cg.pets.battle_pet.hp_per < 30:
+        if cg.player.hp_per < 30 or cg.player.mp < 60 or cg.pets.battle_pet.hp_per < 30:
             self.go_to_heal(cg)
             return
 
@@ -51,8 +53,8 @@ class Script(happy.Script):
 
         # 德威特岛
         if cg.map.id == 30001:
-            cg.go_if(211, 344, 156, 339, 156, 343)
-            cg.go_if(156, 343, 153, 315)
+            cg.go_if(211, 344, 156, 339, 159, 343)
+            cg.go_if(159, 346, 153, 315)
             cg.go_if(153, 315, 122, 306)
             cg.go_if(122, 306, 129, 295)
 
@@ -61,7 +63,10 @@ class Script(happy.Script):
             if len(cg.map.exits) > 0:
                 cg.go_astar(cg.map.exits[0][0], cg.map.exits[0][1])
             else:
-                cg.go_astar(25, 15)
+                cg.go_if(26,20,25,7)
+                cg.go_astar(26,20)
+
+                
 
         if "地下" in cg.map.name:
             # cg.map.read_data()
@@ -112,13 +117,17 @@ class Script(happy.Script):
                 cg.right_click("B")
             else:
                 cg.go_to(13, 23)
+            return
 
         if cg.map.id == 30010:
             if (cg.map.x, cg.map.y) == (68, 100) or (cg.map.x, cg.map.y) == (194, 93):
                 cg.right_click("A")
                 time.sleep(0.5)
+            elif cg.map.x>134 or cg.map.x<116 or cg.map.y<130 or cg.map.y>147:
+                cg.tp()
             else:
-                cg.go_to(116, 134)
+                cg.go_if(134,130,116,147,116,134)
+            
 
     def go_to_sell(self, cg: happy.Cg):
         """_summary_
@@ -144,19 +153,58 @@ class Script(happy.Script):
 
             if (cg.map.x, cg.map.y) == (133, 133):
                 cg.right_click("A")
+                time.sleep(0.5)
                 cg.sell()
-                self.sell_record.append((cg.items.gold, time.gmtime()))
             return
 
     def on_enable(self, enable):
         self.sell_record = []
 
     def on_update(self, cg: happy.Cg):
-        cg.solve_if_captch()
-        ka = cg.items.find(item_name='卡片')
-        if ka:
-            cg.drop_item(ka)
         if "地下" in cg.map.name:
             cg.map.read_data()
             if len(cg.map.exits) < 2:
                 cg.map.request_map_data()
+
+        #验证码
+        cg.solve_if_captch()
+        #仍东西
+        cg.drop_item("卡片","魔石(18G)")
+
+        #记录效率
+        if len(self.sell_record) == 0:
+            self.sell_record.append((cg.items.gold, time.time()))
+        else:
+            if cg.items.gold > self.sell_record[-1][0]:
+                self.sell_record.append((cg.items.gold, time.time()))
+        
+        #武器损坏装备背包内武器
+        if not cg.items[2].valid:
+            gong = cg.items.find(item_name="超強狙擊弓")
+            if gong:
+                cg.use_item(gong)
+            else:
+                send_wechat_notification(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
+                self.enable=False
+
+        #受伤处理
+        if cg.player.injury:
+                send_wechat_notification(f"{cg.player.name} 受伤程度{cg.player.injury} 停止脚本")
+                self.enable=False
+
+
+
+    @property
+    def efficiency(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        if len(self.sell_record) > 2:
+            return str(
+                int((self.sell_record[-1][0] - self.sell_record[1][0])
+                / (self.sell_record[-1][1] - self.sell_record[1][1])
+                * 3600)
+            )+'/h'
+        return "N/A"

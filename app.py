@@ -1,4 +1,5 @@
 """app"""
+
 import os
 import sys
 import glob
@@ -15,17 +16,26 @@ class App(customtkinter.CTk):
         customtkinter (_type_): _description_
     """
 
+    def on_button_click(self):
+        """_summary_"""
+        happy.Cg.close_handles()
+
     def __init__(self):
         super().__init__()
         self.title("HappyCG")
-        self.geometry("700x350")
-        self.grid_columnconfigure((0, 1, 2), weight=1)
-        self.grid_rowconfigure(0, weight=0)
+        self.geometry("1400x600")
+        self.grid_columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
+        self.grid_rowconfigure(0, weight=0, pad=20)
         self.grid_rowconfigure(1, weight=1)
 
-        for i in range(3):
+        for i in range(6):
             label = customtkinter.CTkLabel(self, text="", width=200, height=0)
             label.grid(row=0, column=i, sticky="nsew")
+
+        button0 = customtkinter.CTkButton(
+            self, text="解除多开限制", command=self.on_button_click
+        )
+        button0.grid(row=0, column=0, sticky="w")
 
         self.cgframes: list[Cgframe] = []
         self.refresh()
@@ -45,27 +55,30 @@ class App(customtkinter.CTk):
             self.after(3000, self.refresh)
 
     def remove_destroyed_frames(self):
-        """_summary_
-        """
+        """_summary_"""
         count = len(self.cgframes)
-        for i in range(count-1,0,-1):
+        for i in range(count - 1, 0, -1):
             if not self.cgframes[i].winfo_exists():
                 self.cgframes.pop(i)
 
     def grid_all_frames(self):
-        """_summary_
-        """
+        """_summary_"""
         count = len(self.cgframes)
         for i in range(0, count):
             if self.cgframes[i].winfo_exists():
+                
+                padx = 10
+                if i == 0:
+                    padx = (20, 10)
+                if i == count - 1:
+                    padx = (10, 20)
                 self.cgframes[i].grid(
                     row=1,
                     column=i,
                     stick="nsew",
-                    padx=(30 - i * 15 + 10, i * 15 + 10),
-                    pady=(0, 20),
+                    padx=padx,
+                    pady=(10, 20),
                 )
-
 
 
 class Cgframe(customtkinter.CTkFrame):
@@ -82,6 +95,15 @@ class Cgframe(customtkinter.CTkFrame):
         # lable control
         self.player_name_label = customtkinter.CTkLabel(self, text="")
         self.player_name_label.pack()
+
+        # lable control
+        self.account_label = customtkinter.CTkLabel(self, text="")
+        self.account_label.pack()
+
+        # lable control
+        self.info_label = customtkinter.CTkLabel(self, text="")
+        self.info_label.pack()
+
         # load scripts
         self.scripts_directory = get_scripts_directory()
         self.load_script_names = get_all_py_files(self.scripts_directory)
@@ -105,22 +127,29 @@ class Cgframe(customtkinter.CTkFrame):
             switch.pack()
             self.switches.append(switch)
 
-        self.refresh()
 
-    def refresh(self):
-        """_summary_"""
-        try:
-            self.cg.update()
-            self.player_name_label.configure(text=self.cg.player.name)
-        except Exception as e:  # pylint: disable=broad-except
-            if "Could not read memory" in str(e):
-                self.destroy()
-                print(e, "Destroy This Frame")
-            else :
-                print(e)
-                traceback.print_exc()
-        self.after(100, self.refresh)
-    
+        self.cg.start_loop()
+        self.update_ui()
+        #self.refresh()
+
+    def update_ui(self):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+        """
+        if self.cg.is_closed:
+            self.destroy()
+            return
+        self.player_name_label.configure(text=self.cg.player.name)
+        self.account_label.configure(text=self.cg.account)
+        eff = self.cg.get_script('里洞魔石')
+        if eff:
+            self.info_label.configure(text=eff.efficiency)
+        
+        self.after(3000,self.update_ui)
+
+
     def switch_script_enable(self, script):
         """_summary_"""
         script.enable = not script.enable
@@ -157,3 +186,6 @@ def get_scripts_directory(directory="scripts\\"):
 
 app = App()
 app.mainloop()
+
+for frame in app.cgframes:
+    frame.cg.close()

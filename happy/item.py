@@ -40,9 +40,8 @@ class Item:
     def __init__(self, index, bytes_data: bytes) -> None:
         self._index = index
         self._valid = struct.unpack("H", bytes_data[:2])[0]
-        self._name = bytes(bytes_data[2:48]).rstrip(b'\x00').decode(
-            "big5", errors="ignore"
-        )
+        null_index = bytes_data[2:48].find(b'\x00')
+        self._name = bytes_data[2:2+null_index].decode("big5", errors="ignore")
         self._id = int.from_bytes(bytes_data[3136:3140], byteorder="little")
         self._count = int.from_bytes(bytes_data[3140:3144], byteorder="little")
         self._type = int.from_bytes(bytes_data[3144:3148], byteorder="little")
@@ -134,7 +133,7 @@ class ItemCollection(happy.service.Service):
             self._items.append(
                 Item(i, self.mem.read_bytes(0x00F4C494 + 0xC5C * i, 0xC5C))
             )
-
+        return self
 
     @property
     def bags_valids(self):
@@ -217,12 +216,11 @@ class ItemCollection(happy.service.Service):
         """整理背包，直接调用游戏聊天框/r"""
         self._decode_send("uSr 19 1k P|/r")
 
-    def find(self, item_id=0, item_name="", quantity=0):
-        """_summary_
+    def find(self, item_name="", quantity=0):
+        """模糊匹配包含item_name的第一个物品
 
         Args:
-            id (int, optional): _description_. Defaults to 0.
-            name (str, optional): _description_. Defaults to "".
+            item_name (str, optional): _description_. Defaults to "".
             quantity (int, optional): _description_. Defaults to 0.
 
         Returns:
@@ -231,14 +229,14 @@ class ItemCollection(happy.service.Service):
         for item in self._items:
             if (
                 item.valid == 1
-                and (item.id == item_id or item_name in item.name)
+                and (item_name in item.name)
                 and item.count >= quantity
             ):
                 return item
         return None
 
-    def find_box(self, name=""):
-        """_summary_
+    def find_box(self, item_name=""):
+        """模糊匹配包含item_name的第一个盒子
 
         Args:
             name (str, optional): _description_. Defaults to "".
@@ -247,7 +245,7 @@ class ItemCollection(happy.service.Service):
             _type_: _description_
         """
         for item in self._items:
-            if item.valid == 1 and "『" + name + "』" in item.name:
+            if item.valid == 1 and "『" in item.name and "』" in item.name and item_name in item.name:
                 return item
         return None
 
