@@ -3,10 +3,16 @@
 import os
 import sys
 import glob
-import traceback
+import logging
 import customtkinter
 import happy.core
 import happy.script
+
+logging.basicConfig(
+    filename="example.log",
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
 
 
 class App(customtkinter.CTk):
@@ -66,7 +72,7 @@ class App(customtkinter.CTk):
         count = len(self.cgframes)
         for i in range(0, count):
             if self.cgframes[i].winfo_exists():
-                
+
                 padx = 10
                 if i == 0:
                     padx = (20, 10)
@@ -127,10 +133,9 @@ class Cgframe(customtkinter.CTkFrame):
             switch.pack()
             self.switches.append(switch)
 
-
         self.cg.start_loop()
         self.update_ui()
-        #self.refresh()
+        # self.refresh()
 
     def update_ui(self):
         """_summary_
@@ -143,12 +148,10 @@ class Cgframe(customtkinter.CTkFrame):
             return
         self.player_name_label.configure(text=self.cg.player.name)
         self.account_label.configure(text=self.cg.account)
-        eff = self.cg.get_script('里洞魔石')
+        eff = self.cg.get_script("里洞魔石")
         if eff:
             self.info_label.configure(text=eff.efficiency)
-        
-        self.after(3000,self.update_ui)
-
+        self.after(3000, self.update_ui)
 
     def switch_script_enable(self, script):
         """_summary_"""

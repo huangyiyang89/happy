@@ -10,19 +10,6 @@ from PIL import Image
 import numpy as np
 
 
-def base64_to_image(img_base64):
-    """_summary_
-
-    Args:
-        img_base64 (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    img_data = base64.b64decode(img_base64)
-    return Image.open(io.BytesIO(img_data))
-
-
 def png_rgba_black_preprocess(img: Image):
     """_summary_
 

@@ -88,7 +88,10 @@ class Map(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        return self.mem.get_directory() + "\\" + self.mem.read_string(0x0018CCCC)
+        path = self.mem.read_string(0x0018CCCC)
+        if "map" not in path:
+            path = self.mem.read_string(0x0018CCCC-4)
+        return self.mem.get_directory() + "\\" + path
 
     
     def read_data(self):
@@ -163,7 +166,7 @@ class Map(happy.service.Service):
                 self.exits = sorted(self.exits, key=lambda x: x[2])
                 return True
         except FileNotFoundError:
-            print("未能打开地图文件")
+            #print("未能打开地图文件")
             return False
 
     def paint_map(self):
@@ -230,7 +233,7 @@ class Map(happy.service.Service):
             #self.read_data()
             self.last_map_id = self.id
             time.sleep(1)
-            print(f"切换地图至 {self.name} {self.file_path}")
+            #print(f"切换地图至 {self.name} {self.file_path}")
             self.request_map_data()
 
         # try:

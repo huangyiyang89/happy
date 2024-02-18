@@ -1,7 +1,7 @@
 """
 HappyCG
 """
-
+import logging
 import threading
 import time
 import importlib
@@ -40,24 +40,17 @@ class Cg(Service):
         self._scripts = []
         self.is_closed = False
         self._last_captcha_code = ""
-        self._update_callback = None
+        self._last_tick_count = 0
         self.get_captcha()
 
     @property
-    def update_callback(self):
+    def _tick_count(self):
         """_summary_
 
         Returns:
             _type_: _description_
         """
-        return self._update_callback
-
-    @update_callback.setter
-    def update_callback(self, func):
-        if callable(func):
-            self._update_callback = func
-        else:
-            raise ValueError("Callback must be a callable function")
+        return self.mem.read_int(0x00F4C304)
 
     @staticmethod
     def open(name=""):
@@ -79,14 +72,16 @@ class Cg(Service):
 
     def _main_loop(self):
         """not used yet"""
-        
+
         while self._is_running:
-            try:
-                self.update()
-            except Exception as e:  # pylint: disable=broad-except
-                print(e)
-                time.sleep(5)
-                #self.close()
+            self.update()
+            time.sleep(0.1)
+            # try:
+                
+            # except Exception as e:  # pylint: disable=broad-except
+            #     print(e)
+            #     time.sleep(5)
+            #     # self.close()
 
     def start_loop(self):
         """start main loop not used yet"""
@@ -129,9 +124,8 @@ class Cg(Service):
                     script.on_not_battle(self)
                     if not self.is_moving:
                         script.on_not_moving(self)
-                        
-        # if self._update_callback:
-        #     self.update_callback(self)
+
+
 
     def go_to(self, x, y):
         """_summary_
@@ -157,6 +151,7 @@ class Cg(Service):
         self.mem.write_bytes(0x0046845D, bytes.fromhex("A3 C8 C2 C0 00"), 5)
         self.mem.write_bytes(0x00468476, bytes.fromhex("89 0D C4 C2 C0 00"), 6)
 
+    #TODO：改进这个函数
     def go_if(self, x1, y1, x2, y2, x3=None, y3=None, map_id=None):
         """_summary_
 
@@ -222,7 +217,7 @@ class Cg(Service):
             "hh",
         ],
     ):
-        """_summary_
+        """发走路包
 
         Args:
             direction (_type_, optional): _description_. Defaults to Literal["a", "b", "c", "d", "e", "f", "g", "h","aa", "bb", "cc", "dd", "ee", "ff", "gg", "hh"].
@@ -442,7 +437,12 @@ class Cg(Service):
             y62 = self.map.y_62
             items_str = ""
             for item in self.items.bags_valids:
-                if "魔石" in item.name or "卡片" in item.name or ("寵物鈴鐺" in item.name and item.count>=80) or ("紙人娃娃" in item.name and item.count>=80):
+                if (
+                    "魔石" in item.name
+                    or "卡片" in item.name
+                    or ("寵物鈴鐺" in item.name and item.count >= 80)
+                    or ("紙人娃娃" in item.name and item.count >= 80)
+                ):
                     count = 2 if "寵物鈴鐺" in item.name else item.count
                     count = 1 if "紙人娃娃" in item.name else count
                     items_str += str(item.index) + r"\\z" + str(count) + r"\\z"
@@ -453,41 +453,6 @@ class Cg(Service):
         self.mem.write_bytes(0x00530CA3, bytes.fromhex("90 90 90 90 90"), 5)
         self.mem.write_bytes(0x00530CB9, bytes.fromhex("90 90 90 90 90"), 5)
         self.mem.write_int(0x0057E998, 2)
-
-    def produce(self, craft_id=0, craft_name=""):
-        """根据生产的物品名称或id生产
-
-        Args:
-            craft_id (int, optional): 寿喜锅 912. Defaults to 0.
-            craft_name (str, optional): _description_. Defaults to "".
-        """
-        self._stop_random_key()
-
-        craft: PlayerSkillCraft = self.player.skills.find_craft(craft_id, craft_name)
-        if craft is None:
-            print("未找到要生产的技能")
-            return False
-        if craft.cost > self.player.mp:
-            print("mp不足")
-            return False
-
-        items_str = ""
-        for ingredient in craft.ingredients:
-            item = self.items.find(ingredient.name, ingredient.count)
-            if item is None:
-                box = self.items.find_box(ingredient.name)
-                if box:
-                    self.use_item(box)
-                    return True
-                print("材料用尽。")
-                return False
-            items_str = "|" + str(item.index) + items_str
-
-        send_content = f"sM {craft.skill.index} 0 -1 {craft.id}" + items_str
-        self._decode_send("Ivfo q")
-        time.sleep(14)
-        self._decode_send(send_content)
-        return True
 
     def get_captcha(self):
         """_summary_
@@ -546,8 +511,10 @@ class Cg(Service):
         if code is not None:
             print("正在尝试解决验证码...")
             url = f"https://www.bluecg.net/plugin.php?id=gift:v3v&ac={self.account}&time={code}"
+            logging.info(self.player.name+":"+url)
             success = solve_captcha(url)
-            print(success)
+            return success
+        return None
 
     def drop_item(self, *args):
         """仍物品，*args可为Item示例或物品名string
@@ -556,14 +523,19 @@ class Cg(Service):
             item: item_name or Item instance
         """
         for item in args:
-            if isinstance(item,Item):
-                self._decode_send(f"QpfE {self.map.x_62} {self.map.y_62} 0 {item.index_62}")
-            if isinstance(item,str):
+            if isinstance(item, Item):
+                self._decode_send(
+                    f"QpfE {self.map.x_62} {self.map.y_62} 0 {item.index_62}"
+                )
+            if isinstance(item, str):
                 item_to_find = self.items.find(item_name=item)
                 if item_to_find:
-                    self._decode_send(f"QpfE {self.map.x_62} {self.map.y_62} 0 {item_to_find.index_62}")
+                    logging.info(self.player.name+"扔掉"+item_to_find.name)
+                    self._decode_send(
+                        f"QpfE {self.map.x_62} {self.map.y_62} 0 {item_to_find.index_62}"
+                    )
 
-    def get_script(self,name):
+    def get_script(self, name):
         """_summary_
 
         Args:
@@ -576,4 +548,17 @@ class Cg(Service):
             if script.name == name:
                 return script
         return None
-        
+
+    @property
+    def is_disconnected(self)->bool:
+        """连续执行判断是否掉线
+
+        Returns:
+            bool: _description_
+        """
+        curr = self._tick_count
+        if curr > self._last_tick_count:
+            self._last_tick_count = curr
+            return False
+        print(curr,self._last_tick_count)
+        return True

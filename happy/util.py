@@ -1,9 +1,10 @@
 """Utils"""
 from functools import wraps
-import requests
 import time
 import random
 import re
+import logging
+import requests
 import cloudscraper
 import capsolver
 from PIL import Image
@@ -137,6 +138,7 @@ def solve_captcha(url) -> bool:
         print("data-sitekey:", matches[0])
         sitekey = matches[0]
     else:
+        logging.error("页面有误或反爬检测")
         print("页面有误或反爬检测")
         return False
 
@@ -145,6 +147,7 @@ def solve_captcha(url) -> bool:
         print("sid:", matches[0])
         sid = matches[0]
     else:
+        logging.error("页面有误或反爬检测")
         print("页面有误或反爬检测")
         return False
 
@@ -177,7 +180,7 @@ def solve_captcha(url) -> bool:
         if "succeed" in checked_res:
             print("验证码识别成功")
             break
-        print(f"验证码识别错误，尝试第{i+1}次")
+        logging.info("验证码识别错误")
         if i==4:
             return False
 
@@ -194,6 +197,7 @@ def solve_captcha(url) -> bool:
     g_recaptcha_response = solution["gRecaptchaResponse"]
     user_agent = solution["userAgent"]
     if not g_recaptcha_response or not user_agent:
+        logging.error("capsolver 未响应结果")
         print("capsolver not work")
         return False
 
@@ -209,6 +213,7 @@ def solve_captcha(url) -> bool:
 
     res = scraper.post(url, data=data)
     print(res)
+    logging.debug(res)
     return True
 
 def send_wechat_notification(content):

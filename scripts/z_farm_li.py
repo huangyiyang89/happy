@@ -63,8 +63,9 @@ class Script(happy.Script):
             if len(cg.map.exits) > 0:
                 cg.go_astar(cg.map.exits[0][0], cg.map.exits[0][1])
             else:
-                cg.go_if(26,20,25,7)
-                cg.go_astar(26,20)
+                cg.go_if(24,19,24,7)
+                cg.go_if(24,7,24,19)
+                cg.go_astar(24,19)
 
                 
 
@@ -178,18 +179,26 @@ class Script(happy.Script):
             if cg.items.gold > self.sell_record[-1][0]:
                 self.sell_record.append((cg.items.gold, time.time()))
         
+        # if cg.is_disconnected:
+        #     #send_wechat_notification(f"{cg.player.name} 已掉线，停止脚本")
+        #     print(f"{cg.player.name} 已掉线，停止脚本")
+        #     self.enable=False
+        #     return
+        
         #武器损坏装备背包内武器
         if not cg.items[2].valid:
-            gong = cg.items.find(item_name="超強狙擊弓")
+            gong = cg.items.find(item_name="弓")
             if gong:
                 cg.use_item(gong)
             else:
-                send_wechat_notification(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
+                #send_wechat_notification(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
+                print(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
                 self.enable=False
 
         #受伤处理
         if cg.player.injury:
-                send_wechat_notification(f"{cg.player.name} 受伤程度{cg.player.injury} 停止脚本")
+                #send_wechat_notification(f"{cg.player.name} 受伤程度{cg.player.injury} ，停止脚本")
+                print(f"{cg.player.name} 受伤程度{cg.player.injury} ，停止脚本")
                 self.enable=False
 
 
