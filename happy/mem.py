@@ -35,6 +35,7 @@ class CgMem(pymem.Pymem):
         for process in cg_list:
             if process.szExeFile == process_name:
                 yield process.th32ProcessID
+        pymem.process.process_from_id
 
     def read_xor_value(self, address) -> int:
         """_summary_

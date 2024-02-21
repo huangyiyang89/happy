@@ -2,7 +2,7 @@
 import time
 import random
 import happy
-from happy.util import b62,send_wechat_notification
+from happy.util import send_wechat_notification
 
 
 class Script(happy.Script):
@@ -24,6 +24,8 @@ class Script(happy.Script):
         Args:
             cg (happy.core.Cg): _description_
         """
+        # 验证码
+        cg.solve_if_captch()
 
         if cg.items.blanks_count == 0:
             self.go_to_sell(cg)
@@ -63,11 +65,9 @@ class Script(happy.Script):
             if len(cg.map.exits) > 0:
                 cg.go_astar(cg.map.exits[0][0], cg.map.exits[0][1])
             else:
-                cg.go_if(24,19,24,7)
-                cg.go_if(24,7,24,19)
-                cg.go_astar(24,19)
-
-                
+                cg.go_if(24, 19, 24, 7)
+                cg.go_if(24, 7, 24, 19)
+                cg.go_astar(24, 19)
 
         if "地下" in cg.map.name:
             # cg.map.read_data()
@@ -124,11 +124,10 @@ class Script(happy.Script):
             if (cg.map.x, cg.map.y) == (68, 100) or (cg.map.x, cg.map.y) == (194, 93):
                 cg.right_click("A")
                 time.sleep(0.5)
-            elif cg.map.x>134 or cg.map.x<116 or cg.map.y<130 or cg.map.y>147:
+            elif cg.map.x > 134 or cg.map.x < 116 or cg.map.y < 130 or cg.map.y > 147:
                 cg.tp()
             else:
-                cg.go_if(134,130,116,147,116,134)
-            
+                cg.go_if(134, 130, 116, 147, 116, 134)
 
     def go_to_sell(self, cg: happy.Cg):
         """_summary_
@@ -162,46 +161,50 @@ class Script(happy.Script):
         self.sell_record = []
 
     def on_update(self, cg: happy.Cg):
+
+        if cg.is_disconnected:
+            self.enable = False
+            send_wechat_notification(f"{cg.account},{cg.player.name} 已掉线")
+            return
+
+        cg.nop_shell()
+
         if "地下" in cg.map.name:
             cg.map.read_data()
             if len(cg.map.exits) < 2:
                 cg.map.request_map_data()
 
-        #验证码
-        cg.solve_if_captch()
-        #仍东西
-        cg.drop_item("卡片","魔石(18G)")
+        # 仍东西
+        cg.drop_item("卡片", "魔石(18G)")
 
-        #记录效率
+        # 记录效率
         if len(self.sell_record) == 0:
             self.sell_record.append((cg.items.gold, time.time()))
         else:
             if cg.items.gold > self.sell_record[-1][0]:
                 self.sell_record.append((cg.items.gold, time.time()))
-        
+
         # if cg.is_disconnected:
         #     #send_wechat_notification(f"{cg.player.name} 已掉线，停止脚本")
         #     print(f"{cg.player.name} 已掉线，停止脚本")
         #     self.enable=False
         #     return
-        
-        #武器损坏装备背包内武器
+
+        # 武器损坏装备背包内武器
         if not cg.items[2].valid:
             gong = cg.items.find(item_name="弓")
             if gong:
                 cg.use_item(gong)
             else:
-                #send_wechat_notification(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
+                # send_wechat_notification(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
                 print(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
-                self.enable=False
+                self.enable = False
 
-        #受伤处理
+        # 受伤处理
         if cg.player.injury:
-                #send_wechat_notification(f"{cg.player.name} 受伤程度{cg.player.injury} ，停止脚本")
-                print(f"{cg.player.name} 受伤程度{cg.player.injury} ，停止脚本")
-                self.enable=False
-
-
+            # send_wechat_notification(f"{cg.player.name} 受伤程度{cg.player.injury} ，停止脚本")
+            print(f"{cg.player.name} 受伤程度{cg.player.injury} ，停止脚本")
+            self.enable = False
 
     @property
     def efficiency(self):
@@ -211,9 +214,14 @@ class Script(happy.Script):
             _type_: _description_
         """
         if len(self.sell_record) > 2:
-            return str(
-                int((self.sell_record[-1][0] - self.sell_record[1][0])
-                / (self.sell_record[-1][1] - self.sell_record[1][1])
-                * 3600)
-            )+'/h'
+            return (
+                str(
+                    int(
+                        (self.sell_record[-1][0] - self.sell_record[1][0])
+                        / (self.sell_record[-1][1] - self.sell_record[1][1])
+                        * 3600
+                    )
+                )
+                + "/h"
+            )
         return "N/A"

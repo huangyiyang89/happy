@@ -9,7 +9,7 @@ import happy.core
 import happy.script
 
 logging.basicConfig(
-    filename="example.log",
+    filename="unhappy.log",
     level=logging.DEBUG,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )

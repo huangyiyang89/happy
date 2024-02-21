@@ -150,8 +150,6 @@ class UnitCollection(Service):
             hp_lower_than_per (int, optional): _description_. Defaults to 75.
         """
 
-
-
         # 强力位二进制表示
         crosses = [
             0b1110010000,
@@ -208,9 +206,11 @@ class UnitCollection(Service):
         ret_enemy = None
         # 随机寻找目标
         shuffled_list = self.enemies.copy()  # 首先複製原始列表
-        random.shuffle(shuffled_list)    # 然後打亂新列表
+        random.shuffle(shuffled_list)  # 然後打亂新列表
         for enemy in shuffled_list:
-            count = UnitCollection.count_set_bits(units_bit & crosses[enemy.position-10])
+            count = UnitCollection.count_set_bits(
+                units_bit & crosses[enemy.position - 10]
+            )
             if count == 4:
                 return enemy
             if count == 3:
@@ -254,7 +254,7 @@ class UnitCollection(Service):
         else:
             # 处理空列表的情况，可以返回 None 或其他默认值
             return None
-    
+
     @staticmethod
     def count_set_bits(n):
         """计算二进制数中有多少个1
@@ -270,3 +270,8 @@ class UnitCollection(Service):
             count += n & 1
             n >>= 1
         return count
+
+    def print_all_units(self):
+        """_summary_"""
+        for unit in self._units:
+            print(unit.formatted_info)

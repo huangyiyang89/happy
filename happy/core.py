@@ -1,15 +1,17 @@
 """
 HappyCG
 """
-import logging
+
 import threading
 import time
+import logging
 import importlib
 import importlib.util
 import sys
-import requests
 import random
 from typing import Literal
+import psutil
+import requests
 import happy.unit
 import happy.player
 import happy.pet
@@ -37,11 +39,11 @@ class Cg(Service):
         self.pets = happy.pet.PetCollection(mem)
         self.map = happy.map.Map(mem)
         self.items = ItemCollection(mem)
-        self._scripts = []
+        self._scripts: list[happy.script.Script] = []
         self.is_closed = False
         self._last_captcha_code = ""
-        self._last_tick_count = 0
-        self.get_captcha()
+        self._is_disconnected_check_var = (0, 0)
+        self._last_update_time = 0
 
     @property
     def _tick_count(self):
@@ -70,18 +72,26 @@ class Cg(Service):
                 return new_cg
         return None
 
+    def process_is_closed(self):
+        """判断游戏进程是否已关闭
+
+        Returns:
+            _type_: _description_
+        """
+        return not self.mem.process_id in (p.pid for p in psutil.process_iter())
+
     def _main_loop(self):
         """not used yet"""
 
         while self._is_running:
-            self.update()
-            time.sleep(0.1)
-            # try:
-                
-            # except Exception as e:  # pylint: disable=broad-except
-            #     print(e)
-            #     time.sleep(5)
-            #     # self.close()
+            try:
+                self.update()
+                time.sleep(0.1)
+            except Exception as e:  # pylint: disable=broad-except
+                logging.warning(e)
+                if self.process_is_closed():
+                    logging.warning("游戏进程已关闭，释放对象。")
+                    self.close()
 
     def start_loop(self):
         """start main loop not used yet"""
@@ -100,7 +110,7 @@ class Cg(Service):
 
     def update(self):
         """update all children and trigger events"""
-
+        self._last_update_time = time.time()
         self.battle.update()
         self.player.update()
         self.pets.update()
@@ -124,8 +134,6 @@ class Cg(Service):
                     script.on_not_battle(self)
                     if not self.is_moving:
                         script.on_not_moving(self)
-
-
 
     def go_to(self, x, y):
         """_summary_
@@ -151,7 +159,7 @@ class Cg(Service):
         self.mem.write_bytes(0x0046845D, bytes.fromhex("A3 C8 C2 C0 00"), 5)
         self.mem.write_bytes(0x00468476, bytes.fromhex("89 0D C4 C2 C0 00"), 6)
 
-    #TODO：改进这个函数
+    # TODO：改进这个函数
     def go_if(self, x1, y1, x2, y2, x3=None, y3=None, map_id=None):
         """_summary_
 
@@ -440,10 +448,10 @@ class Cg(Service):
                 if (
                     "魔石" in item.name
                     or "卡片" in item.name
-                    or ("寵物鈴鐺" in item.name and item.count >= 80)
-                    or ("紙人娃娃" in item.name and item.count >= 80)
+                    or ("寵物鈴鐺" in item.name and item.count >= 40)
+                    or ("紙人娃娃" in item.name and item.count >= 40)
                 ):
-                    count = 2 if "寵物鈴鐺" in item.name else item.count
+                    count = 1 if "寵物鈴鐺" in item.name else item.count
                     count = 1 if "紙人娃娃" in item.name else count
                     items_str += str(item.index) + r"\\z" + str(count) + r"\\z"
             content = f"xD {x62} {y62} 5o {b62(unk)} 0 " + items_str[:-3]
@@ -509,10 +517,7 @@ class Cg(Service):
         """_summary_"""
         code = self.get_captcha()
         if code is not None:
-            print("正在尝试解决验证码...")
-            url = f"https://www.bluecg.net/plugin.php?id=gift:v3v&ac={self.account}&time={code}"
-            logging.info(self.player.name+":"+url)
-            success = solve_captcha(url)
+            success = solve_captcha(self.account, code)
             return success
         return None
 
@@ -530,7 +535,6 @@ class Cg(Service):
             if isinstance(item, str):
                 item_to_find = self.items.find(item_name=item)
                 if item_to_find:
-                    logging.info(self.player.name+"扔掉"+item_to_find.name)
                     self._decode_send(
                         f"QpfE {self.map.x_62} {self.map.y_62} 0 {item_to_find.index_62}"
                     )
@@ -550,15 +554,21 @@ class Cg(Service):
         return None
 
     @property
-    def is_disconnected(self)->bool:
-        """连续执行判断是否掉线
+    def is_disconnected(self) -> bool:
+        """是否掉线
 
         Returns:
             bool: _description_
         """
-        curr = self._tick_count
-        if curr > self._last_tick_count:
-            self._last_tick_count = curr
-            return False
-        print(curr,self._last_tick_count)
-        return True
+        # 0x00D10EB0 0x00D10EB1 0x00D10EB2
+        value = self.mem.read_bytes(0x00D10EB2, 1)
+        flag = int.from_bytes(value,byteorder='little')
+        return  flag > 0
+
+    def nop_shell(self):
+        """_summary_"""
+        # for module in self.mem.list_modules():
+        #     if module.name == "shell32.dll":
+        #         print(module)
+        pointer = self.mem.read_int(0x0053E220)
+        self.mem.write_bytes(pointer, bytes.fromhex("C3 90"), 2)

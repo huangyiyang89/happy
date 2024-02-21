@@ -1,5 +1,4 @@
 """Map"""
-import os
 import struct
 import heapq
 import random

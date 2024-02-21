@@ -1,5 +1,4 @@
 "script"
-import time
 import happy
 from happy.core import Cg
 from happy.util import bet
@@ -26,8 +25,8 @@ class Script(happy.Script):
         Args:
             cg (happy.core.Cg): _description_
         """
-        #cg.send_wechat_notification()
-    
+        # cg.send_wechat_notification()
+
     def on_battle(self, cg: happy.Cg):
         """_summary_
 
@@ -54,7 +53,7 @@ class Script(happy.Script):
             if a != b:
                 pass
             else:
-                #time.sleep(1)
+                # time.sleep(1)
                 self.strategy.player_action(cg)
 
     def on_pet_turn(self, cg: happy.Cg):
@@ -106,10 +105,10 @@ class Strategy:
         if target is None:
             return
 
-        if cg.player.hp_per<60:
-            drug = next(cg.items.drugs,None)
+        if cg.player.hp_per < 60:
+            drug = next(cg.items.drugs, None)
             if drug:
-                cg.player.use_battle_item(drug,cg.player)
+                cg.player.use_battle_item(drug, cg.player)
                 return
 
         if (
@@ -140,13 +139,24 @@ class Strategy:
             pet.cast(heal_skill, target)
             return
 
-        power_magic = pet.get_skill("強力隕石魔法", "強力冰凍魔法", "強力火焰魔法", "強力風刃魔法")
+        power_magic = pet.get_skill(
+            "強力隕石魔法", "強力冰凍魔法", "強力火焰魔法", "強力風刃魔法"
+        )
         cross_target = cg.battle.units.get_cross_enemy()
         if power_magic and cross_target:
             pet.cast(power_magic, cross_target)
             return
 
-        magic = pet.get_skill("隕石魔法", "冰凍魔法", "火焰魔法", "風刃魔法","強力隕石魔法", "強力冰凍魔法", "強力火焰魔法", "強力風刃魔法")
+        magic = pet.get_skill(
+            "隕石魔法",
+            "冰凍魔法",
+            "火焰魔法",
+            "風刃魔法",
+            "強力隕石魔法",
+            "強力冰凍魔法",
+            "強力火焰魔法",
+            "強力風刃魔法",
+        )
         if magic:
             pet.cast(magic, target)
             return
@@ -155,12 +165,12 @@ class Strategy:
         enemies_count = len(cg.battle.units.enemies)
         friends_count = len(cg.battle.units.friends)
         first_skill = pet.skills[0]
-        if enemies_count < 4 and guard_counter and friends_count>6 and bet(50):
+        if enemies_count < 4 and guard_counter and friends_count > 6 and bet(50):
             pet.cast(guard_counter, target)
             return
 
-        pet.cast(first_skill,target)
-        #pet.attack(target)
+        pet.cast(first_skill, target)
+        # pet.attack(target)
 
 
 class ChuanJiao(Strategy):
@@ -204,7 +214,10 @@ class QiCheng(Strategy):
     Args:
         Strategy (_type_): _description_
     """
+
     def player_action(self, cg: Cg):
-        skill = cg.player.skills.get_skill('騎乘')
+        skill = cg.player.skills.get_skill("騎乘")
+        print(skill)
+
     def pet_action(self, cg: Cg):
         return super().pet_action(cg)

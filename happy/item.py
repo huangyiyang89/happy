@@ -1,4 +1,5 @@
 """Item"""
+
 import struct
 from typing import Iterator
 import happy.service
@@ -40,11 +41,17 @@ class Item:
     def __init__(self, index, bytes_data: bytes) -> None:
         self._index = index
         self._valid = struct.unpack("H", bytes_data[:2])[0]
-        null_index = bytes_data[2:48].find(b'\x00')
-        self._name = bytes_data[2:2+null_index].decode("big5", errors="ignore")
-        self._id = int.from_bytes(bytes_data[3136:3140], byteorder="little")
-        self._count = int.from_bytes(bytes_data[3140:3144], byteorder="little")
-        self._type = int.from_bytes(bytes_data[3144:3148], byteorder="little")
+        if self._valid:
+            null_index = bytes_data[2:48].find(b"\x00")
+            self._name = bytes_data[2 : 2 + null_index].decode("big5", errors="ignore")
+            self._id = int.from_bytes(bytes_data[3136:3140], byteorder="little")
+            self._count = int.from_bytes(bytes_data[3140:3144], byteorder="little")
+            self._type = int.from_bytes(bytes_data[3144:3148], byteorder="little")
+        else:
+            self._name = ""
+            self._id = -1
+            self._count = -1
+            self._type = -1
 
     @property
     def index(self):
@@ -142,7 +149,7 @@ class ItemCollection(happy.service.Service):
         Yields:
             _type_: _description_
         """
-        for i in range(8,28):
+        for i in range(8, 28):
             item = self._items[i]
             if item.valid:
                 yield item
@@ -155,10 +162,10 @@ class ItemCollection(happy.service.Service):
             _type_: _description_
         """
         count = 0
-        for i in range(8,28):
+        for i in range(8, 28):
             item = self._items[i]
             if not item.valid:
-                count = count +1
+                count = count + 1
         return count
 
     @property
@@ -202,7 +209,7 @@ class ItemCollection(happy.service.Service):
             _type_: _description_
         """
         return self.mem.read_int(0x00F4C3EC)
-    
+
     def put(self, item: Item, position: int):
         """拿起item放到指定position
 
@@ -227,11 +234,7 @@ class ItemCollection(happy.service.Service):
             _type_: _description_
         """
         for item in self._items:
-            if (
-                item.valid == 1
-                and (item_name in item.name)
-                and item.count >= quantity
-            ):
+            if item.valid == 1 and (item_name in item.name) and item.count >= quantity:
                 return item
         return None
 
@@ -245,10 +248,14 @@ class ItemCollection(happy.service.Service):
             _type_: _description_
         """
         for item in self._items:
-            if item.valid == 1 and "『" in item.name and "』" in item.name and item_name in item.name:
+            if (
+                item.valid == 1
+                and "『" in item.name
+                and "』" in item.name
+                and item_name in item.name
+            ):
                 return item
         return None
-
 
     def find_food_box(self):
         """_summary_
@@ -260,6 +267,20 @@ class ItemCollection(happy.service.Service):
             _type_: _description_
         """
         for item in self._items:
-            if item.valid == 1 and ("『壽喜鍋』" in item.name or "『魚翅湯』" in item.name):
+            if item.valid == 1 and (
+                "『壽喜鍋』" in item.name or "『魚翅湯』" in item.name
+            ):
                 return item
         return None
+
+
+    def weapon_is_gong(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        for item in self._items[1:3]:
+            if "弓" in item.name:
+                return True
+        return False

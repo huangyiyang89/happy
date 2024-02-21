@@ -56,6 +56,7 @@ from happy.mem import CgMem
 # 	int walk;//6D4
 # }pet_t;
 
+
 class Pet(happy.unit.Unit):
     """_summary_
 
@@ -74,7 +75,7 @@ class Pet(happy.unit.Unit):
             battle_flag (_type_): _description_
             skills (list[happy.skill.PetSkill]): 不包含空技能
         """
-        
+
         self.index = index
         self.name = name
         self.battle_flag = battle_flag
@@ -104,13 +105,19 @@ class Pet(happy.unit.Unit):
                     return skill
         return None
 
-    def has_power_magic_skill(self)->bool:
+    def has_power_magic_skill(self) -> bool:
         """判断是否魔宠
 
         Returns:
             _type_: _description_
         """
-        return self.get_skill("強力隕石魔法", "強力冰凍魔法", "強力火焰魔法", "強力風刃魔法") is not None
+        return (
+            self.get_skill(
+                "強力隕石魔法", "強力冰凍魔法", "強力火焰魔法", "強力風刃魔法"
+            )
+            is not None
+        )
+
 
 class BattlePet(Service, Pet):
     """_summary_
@@ -125,7 +132,7 @@ class BattlePet(Service, Pet):
         Pet.__init__(self, pet.index, pet.name, pet.battle_flag, pet.skills)
 
     def _execute_pet_command(self, pet_battle_order="W|0|E"):
-        guard = self.get_skill("防禦","明鏡止水","座騎")
+        guard = self.get_skill("防禦", "明鏡止水", "座騎")
         flag = 1 << guard.index
         self.mem.write_short(0x005988B0, flag)
         # hook
@@ -134,7 +141,7 @@ class BattlePet(Service, Pet):
         self.mem.write_bytes(0x00CDA984, bytes.fromhex("02"), 1)
         # 骑乘
         self.mem.write_bytes(0x00475D92, bytes.fromhex("90 90"), 2)
-        #print(pet_battle_order)
+        # print(pet_battle_order)
         time.sleep(0.1)
         # 还原
         self.mem.write_string(0x00543EC0, r"W|%X|%X" + "\0")
@@ -150,7 +157,7 @@ class BattlePet(Service, Pet):
             unit (happy.unit.Unit): _description_
         """
         position = unit.position if unit is not None else 0
-        if self.mp>=skill.cost:
+        if self.mp >= skill.cost:
             if "強力" in skill.name:
                 position = position + 0x14
             if "超強" in skill.name:
@@ -175,25 +182,23 @@ class BattlePet(Service, Pet):
         Returns:
             _type_: _description_
         """
-        return self.mem.read_xor_value(0x00ED4FF8+self.index*0x5110)
+        return self.mem.read_xor_value(0x00ED4FF8 + self.index * 0x5110)
 
     @property
     def hp_max(self):
-        """_summary_
-        """
-        return self.mem.read_xor_value(0x00ED5008+self.index*0x5110)
+        """_summary_"""
+        return self.mem.read_xor_value(0x00ED5008 + self.index * 0x5110)
 
     @property
     def mp(self):
-        """_summary_
-        """
-        return self.mem.read_xor_value(0x00ED5018+self.index*0x5110)
+        """_summary_"""
+        return self.mem.read_xor_value(0x00ED5018 + self.index * 0x5110)
 
     @property
     def mp_max(self):
-        """_summary_
-        """
-        return self.mem.read_xor_value(0x00ED5028+self.index*0x5110)
+        """_summary_"""
+        return self.mem.read_xor_value(0x00ED5028 + self.index * 0x5110)
+
 
 class PetCollection(Service):
     """_summary_

@@ -1,4 +1,5 @@
 """Utils"""
+
 from functools import wraps
 import time
 import random
@@ -10,7 +11,6 @@ import capsolver
 from PIL import Image
 from PIL import ImageSequence
 from happy.dddocr import DdddOcr
-
 
 
 def merge_path(path):
@@ -114,20 +114,24 @@ def timer(func):
     Args:
         func (_type_): _description_
     """
+
     def wrapper(*args, **kwargs):
         start_time = time.time()  # 记录函数开始时间
         result = func(*args, **kwargs)  # 执行被装饰的函数
         end_time = time.time()  # 记录函数结束时间
         print(f"函数 {func.__name__} 运行时间: {end_time - start_time} 秒")
         return result
+
     return wrapper
 
-def solve_captcha(url) -> bool:
+
+def solve_captcha(account,code) -> bool:
     """_summary_
 
     Args:
         url (_type_): _description_
     """
+    url = f"https://www.bluecg.net/plugin.php?id=gift:v3v&ac={account}&time={code}"
     scraper = cloudscraper.create_scraper()
     scraper.headers["Cache-Control"] = "no-cache"
 
@@ -138,8 +142,7 @@ def solve_captcha(url) -> bool:
         print("data-sitekey:", matches[0])
         sitekey = matches[0]
     else:
-        logging.error("页面有误或反爬检测")
-        print("页面有误或反爬检测")
+        logging.error("not match data-sitekey")
         return False
 
     matches = re.findall(r'updateseccode\(\'([^"]+)\',', main_page_text)
@@ -147,42 +150,8 @@ def solve_captcha(url) -> bool:
         print("sid:", matches[0])
         sid = matches[0]
     else:
-        logging.error("页面有误或反爬检测")
-        print("页面有误或反爬检测")
+        logging.error("not match updateseccode")
         return False
-
-    # request captcha image
-    captcha_url = "https://www.bluecg.net/misc.php?mod=seccode&idhash=" + sid
-    scraper.headers["Referer"] = url
-    for i in range(5):
-        captcha_response = scraper.get(captcha_url)
-        captcha_image_buffer = captcha_response.content
-        with open("code.gif", "wb") as f:
-            f.write(captcha_image_buffer)
-        img = Image.open("code.gif")
-        max_duration = 0
-        for frame in ImageSequence.Iterator(img):
-            duration = frame.info["duration"]
-            if duration > max_duration:
-                frame.save("code.png")
-                max_duration = duration
-
-        # recognize captcha image
-        dddocr = DdddOcr()
-        with open("code.png", "rb") as f:
-            image_bytes = f.read()
-            verifycode = dddocr.classification(image_bytes)
-
-        checked_res = scraper.get(
-            f"https://www.bluecg.net/misc.php?mod=seccode&action=check&inajax=1&modid=plugin::gift&secverify={verifycode}"
-        ).text
-
-        if "succeed" in checked_res:
-            print("验证码识别成功")
-            break
-        logging.info("验证码识别错误")
-        if i==4:
-            return False
 
     # solve recaptcha
     capsolver.api_key = "CAP-0C304B4D66688AA0ABE2C8842DBFEAD3"
@@ -201,8 +170,39 @@ def solve_captcha(url) -> bool:
         print("capsolver not work")
         return False
 
-    print(g_recaptcha_response)
-    print(user_agent)
+    # request captcha image
+    captcha_url = "https://www.bluecg.net/misc.php?mod=seccode&idhash=" + sid
+    scraper.headers["Referer"] = url
+    for i in range(5):
+        captcha_response = scraper.get(captcha_url)
+        captcha_image_buffer = captcha_response.content
+        with open(account+"_code.gif", "wb") as f:
+            f.write(captcha_image_buffer)
+        img = Image.open(account+"_code.gif")
+        max_duration = 0
+        for frame in ImageSequence.Iterator(img):
+            duration = frame.info["duration"]
+            if duration > max_duration:
+                frame.save(account+"_code.png")
+                max_duration = duration
+
+        # recognize captcha image
+        dddocr = DdddOcr()
+        with open(account+"_code.png", "rb") as f:
+            image_bytes = f.read()
+            verifycode = dddocr.classification(image_bytes)
+
+        checked_res = scraper.get(
+            f"https://www.bluecg.net/misc.php?mod=seccode&action=check&inajax=1&modid=plugin::gift&secverify={verifycode}"
+        ).text
+
+        if "succeed" in checked_res:
+            print("图形验证码识别成功")
+            break
+        if i == 4:
+            logging.error("验证码5次未能识别")
+            return False
+    #post verify
     data = {
         "g-recaptcha-response": g_recaptcha_response,
         "seccodehash": sid,
@@ -212,32 +212,29 @@ def solve_captcha(url) -> bool:
     }
 
     res = scraper.post(url, data=data)
-    print(res)
-    logging.debug(res)
     return True
 
+
 def send_wechat_notification(content):
-        """_summary_
+    """_summary_
 
-        Args:
-            content (_type_): _description_
-        """
+    Args:
+        content (_type_): _description_
+    """
 
-        url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=e0ce689b-5a47-4ae2-ab5e-0539268956d7"
-        payload = {
-            "msgtype": "markdown",
-            "markdown": {
-                "content": content
-            },
-        }
-        headers = {"Content-Type": "application/json"}
+    url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=e0ce689b-5a47-4ae2-ab5e-0539268956d7"
+    payload = {
+        "msgtype": "markdown",
+        "markdown": {"content": content},
+    }
+    headers = {"Content-Type": "application/json"}
 
-        response = requests.post(url, json=payload, headers=headers, timeout=1000)
+    response = requests.post(url, json=payload, headers=headers, timeout=1000)
 
-        if response.status_code == 200:
-            print("Markdown message sent successfully.")
-        else:
-            print(
-                "Failed to send Markdown message. Status code:",
-                response.status_code,
-            )
+    if response.status_code == 200:
+        print("Markdown message sent successfully.")
+    else:
+        print(
+            "Failed to send Markdown message. Status code:",
+            response.status_code,
+        )

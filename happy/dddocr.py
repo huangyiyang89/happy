@@ -1,30 +1,10 @@
-# coding=utf-8
-
-
+"""ocr"""
 import io
 import os
 import sys
-import base64
 import onnxruntime
 from PIL import Image
 import numpy as np
-
-
-def png_rgba_black_preprocess(img: Image):
-    """_summary_
-
-    Args:
-        img (Image): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    width = img.width
-    height = img.height
-    image = Image.new("RGB", size=(width, height), color=(255, 255, 255))
-    image.paste(img, (0, 0), mask=img)
-    return image
-
 
 class DdddOcr:
     """_summary_
