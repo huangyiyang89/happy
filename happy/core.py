@@ -20,7 +20,7 @@ from happy.mem import CgMem
 from happy.battle import Battle
 from happy.service import Service
 from happy.item import Item, ItemCollection
-from happy.util import b62, merge_path, solve_captcha,timer
+from happy.util import b62, merge_path, solve_captcha, timer
 import happy.pywinhandle
 
 
@@ -281,7 +281,17 @@ class Cg(Service):
                     box = self.items.find_box(first_food.name)
                     self.use_item(box)
 
-            if self.player.mp_max - self.player.mp >= lose_mp:
+            re_mp = lose_mp
+            if first_food.name == "魚翅湯":
+                re_mp = 1000
+            if first_food.name == "壽喜鍋":
+                re_mp = 600
+            if first_food.name == "漢堡":
+                re_mp = 450
+            if first_food.name == "麵包":
+                re_mp = 100
+
+            if self.player.mp_max - self.player.mp >= re_mp:
                 self.use_item(first_food)
                 self.select_target()
                 self._decode_send(
@@ -289,7 +299,7 @@ class Cg(Service):
                 )
                 open_box_if_no_food()
             if (
-                self.pets.battle_pet.mp_max - self.pets.battle_pet.mp >= lose_mp
+                self.pets.battle_pet.mp_max - self.pets.battle_pet.mp >= re_mp
                 and self.pets.battle_pet.mp < 300
                 and self.pets.battle_pet.has_power_magic_skill()
             ):
@@ -522,12 +532,12 @@ class Cg(Service):
             bool: _description_
         """
         # 0x00D10EB0 0x00D10EB1 0x00D10EB2
-        #value = self.mem.read_bytes(0x00D10EB2, 1)
-        #flag = int.from_bytes(value, byteorder="little")
-        
-        return not self.state in (9,10)
+        # value = self.mem.read_bytes(0x00D10EB2, 1)
+        # flag = int.from_bytes(value, byteorder="little")
 
-    def disable_shell(self,enable = True):
+        return not self.state in (9, 10)
+
+    def disable_shell(self, enable=True):
         """禁止游戏弹出网页"""
         # for module in self.mem.list_modules():
         #     if module.name == "shell32.dll":
@@ -571,7 +581,7 @@ class Cg(Service):
         # 1没有小窗 3正在连接
         if self.state == 2:
             state = self.mem.read_int(0x00F62954)
-            if not state in (1,3):
+            if not state in (1, 3):
                 print("尝试重连")
                 self.mem.write_int(0x00F62954, 1)
                 time.sleep(1)
