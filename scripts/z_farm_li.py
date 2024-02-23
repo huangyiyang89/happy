@@ -27,6 +27,7 @@ class Script(happy.Script):
         Returns:
             _type_: _description_
         """
+        self.sell_record = []
         cg.set_auto_ret_blackscreen()
         cg.set_auto_login()
         cg.set_auto_select_charater()
@@ -181,14 +182,13 @@ class Script(happy.Script):
                 cg.sell()
             return
 
-
-    def on_enable(self, enable):
-        self.sell_record = []
-
     def on_update(self, cg: happy.Cg):
 
+
+        cg.retry_if_login_failed()
+        
         if cg.is_disconnected:
-            self.enable = False
+            self.stop()
             send_wechat_notification(f"{cg.account} {cg.player.name} 已掉线")
             return
 
@@ -209,21 +209,7 @@ class Script(happy.Script):
             if cg.items.gold > self.sell_record[-1][0]:
                 self.sell_record.append((cg.items.gold, time.time()))
 
-        # if cg.is_disconnected:
-        #     #send_wechat_notification(f"{cg.player.name} 已掉线，停止脚本")
-        #     print(f"{cg.player.name} 已掉线，停止脚本")
-        #     self.enable=False
-        #     return
 
-        # 武器损坏装备背包内武器
-        if not cg.items[2].valid:
-            gong = cg.items.find(item_name="弓")
-            if gong:
-                cg.use_item(gong)
-            else:
-                # send_wechat_notification(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
-                print(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
-                self.enable = False
 
     def on_not_battle(self, cg: happy.Cg):
         """_summary_
@@ -236,7 +222,17 @@ class Script(happy.Script):
             # send_wechat_notification(f"{cg.player.name} 受伤程度{cg.player.injury} ，停止脚本")
             print(f"{cg.player.name} 受伤程度{cg.player.injury} 停止脚本")
             send_wechat_notification(f"{cg.account} {cg.player.name} 受伤程度{cg.player.injury} 停止脚本")
-            self.enable = False
+            self.stop()
+        
+        # 武器损坏装备背包内武器
+        if cg.state == 9 and not cg.items[2].valid:
+            gong = cg.items.find(item_name="弓")
+            if gong:
+                cg.use_item(gong)
+            else:
+                # send_wechat_notification(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
+                print(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
+                self.stop()
 
 
     @property

@@ -123,6 +123,10 @@ class Cg(Service):
                     script.on_stop(self)
                     script.state = 0
                 script.on_update(self)
+                if self.state == 9:
+                    script.on_not_battle(self)
+                    if not self.is_moving:
+                        script.on_not_moving(self)
                 if self.battle.is_fighting:
                     script.on_battle(self)
                     if self.battle.is_player_turn:
@@ -133,11 +137,7 @@ class Cg(Service):
                         script.on_pet_turn(self)
                     elif self.battle.is_pet_second_turn:
                         script.on_pet_second_turn(self)
-                else:
-                    script.on_not_battle(self)
-                    if not self.is_moving:
-                        script.on_not_moving(self)
-
+                    
     def go_to(self, x, y):
         """_summary_
 
@@ -542,6 +542,10 @@ class Cg(Service):
         # 00458EF7  89 35 44 76 92 00 改 BE 01 00 00 00 90
         #                                写入几线
         # 00458E1B  E8 80 F0 FF FF 改 B8 D3 00 00 00 过跳转
+
+        #处理重连失败弹窗
+        #00458CB9 39 35 54 29 F6 00 0F 85 69 02 00 00 改C7 05 54 29 F6 00 01 00 00 00 90 90
+
         if not isinstance(line,int):
             return
         if enable:
@@ -550,10 +554,21 @@ class Cg(Service):
                 0x00458EF7, bytes.fromhex(f"BE {line_str} 00 00 00 90"), 6
             )
             self.mem.write_bytes(0x00458E1B, bytes.fromhex("B8 D3 00 00 00"), 5)
+            #self.mem.write_bytes(0x00458CB9,bytes.fromhex("C7 05 54 29 F6 00 01 00 00 00 90 90"),12)
         else:
             self.mem.write_bytes(0x00458EF7, bytes.fromhex("89 35 44 76 92 00"), 6)
             self.mem.write_bytes(0x00458E1B, bytes.fromhex("E8 80 F0 FF FF"), 5)
+            #self.mem.write_bytes(0x00458CB9,bytes.fromhex("39 35 54 29 F6 00 0F 85 69 02 00 00"),12)
             
+    def retry_if_login_failed(self):
+        """_summary_
+        """
+        #1没有小窗 3正在连接
+        if self.state == 2:
+            state = self.mem.read_int(0x00F62954)
+            if not (state == 3 or state == 1):
+                self.mem.write_int(0x00F62954,1)
+                time.sleep(1)
 
     def set_auto_select_charater(self, enable=True):
         """_summary_

@@ -142,7 +142,6 @@ class Cgframe(customtkinter.CTkFrame):
 
         self.cg.start_loop()
         self.update_ui()
-        # self.refresh()
 
     def update_ui(self):
         """_summary_

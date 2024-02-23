@@ -19,7 +19,7 @@ class Battle(happy.service.Service):
 
     @property
     def is_fighting(self) -> bool:
-        """_summary_
+        """state == 10
 
         Returns:
             bool: _description_

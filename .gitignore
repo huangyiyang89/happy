@@ -183,19 +183,11 @@ pyu-data/
 
 #icon
 *.ico
-
-# End of https://www.toptal.com/developers/gitignore/api/python
 *.gif
 *.png
-hanxu03_code.gif
-hanxu03_code.png
+*.jpg
+
+# End of https://www.toptal.com/developers/gitignore/api/python
+
 hanxu04_code.gif
 hanxu04_code.png
-hanxu05_code.gif
-hanxu05_code.png
-hanxu06_code.gif
-hanxu06_code.png
-hanxu07_code.gif
-hanxu07_code.png
-hanxu08_code.gif
-hanxu08_code.png
