@@ -12,6 +12,7 @@ logging.basicConfig(
     filename="unhappy.log",
     level=logging.DEBUG,
     format="%(asctime)s - %(levelname)s - %(message)s",
+    encoding="UTF-8",
 )
 
 
@@ -124,10 +125,16 @@ class Cgframe(customtkinter.CTkFrame):
         self.switches = []
 
         for script in self.load_scripts:
+            switch_var = customtkinter.BooleanVar(value=False)
             switch = customtkinter.CTkSwitch(
                 self,
                 text=script.name,
-                command=lambda script=script: self.switch_script_enable(script),
+                command=lambda switch_var=switch_var, script=script: self.switch_event(
+                    switch_var, script
+                ),
+                variable=switch_var,
+                onvalue=True,
+                offvalue=False,
                 switch_width=50,
             )
             switch.pack()
@@ -151,11 +158,16 @@ class Cgframe(customtkinter.CTkFrame):
         eff = self.cg.get_script("里洞魔石")
         if eff:
             self.info_label.configure(text=eff.efficiency)
+
         self.after(3000, self.update_ui)
 
-    def switch_script_enable(self, script):
+    def switch_event(self, switch_var: customtkinter.BooleanVar, script: happy.Script):
         """_summary_"""
-        script.enable = not script.enable
+        
+        if switch_var.get():
+            script.start()
+        else:
+            script.stop()
 
 
 def get_all_py_files(scripts_directory):

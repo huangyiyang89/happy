@@ -1,32 +1,53 @@
 """script"""
 
+
 class Script:
     """Script interface"""
 
     def __init__(self) -> None:
-        self.enable = False
+        self._state = 0
         self.name = "no name script"
 
     @property
-    def enable(self):
-        """_summary_
+    def state(self):
+        """0停止 1等待开始 2正在运行 3等待结束
 
         Returns:
             _type_: _description_
         """
-        return self._enable
+        return self._state
+    
+    @state.setter
+    def state(self,value):
+        """0停止 1等待开始 2正在运行 3等待结束
 
-    @enable.setter
-    def enable(self, enable):
-        """_summary_
-
-        Args:
-            new_value (_type_): _description_
+        Returns:
+            _type_: _description_
         """
-        self._enable = enable
-        self.on_enable(enable)
+        self._state = value
 
-    def on_enable(self, enable):
+    @property
+    def enable(self):
+        """state > 0
+
+        Returns:
+            _type_: _description_
+        """
+        return self.state > 0
+
+    def start(self):
+        """设置state = 1 等待开始"""
+        self._state = 1
+
+
+    def stop(self):
+        """设置state = 3 等待结束"""
+        self._state = 3
+
+    def on_start(self, cg):
+        """_summary_"""
+
+    def on_stop(self, cg):
         """_summary_"""
 
     def on_update(self, cg):

@@ -32,6 +32,6 @@ class Script(happy.Script):
             self.start_y + random.randrange(-self.range, self.range+1),
         )
 
-    def on_enable(self, enable):
+    def on_start(self, cg):
         self.start_x = 0
         self.start_y = 0

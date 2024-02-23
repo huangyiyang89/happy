@@ -18,6 +18,30 @@ class Script(happy.Script):
         self.start_time = time.time
         self.sell_record = []
 
+    def on_start(self, cg: happy.Cg):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        cg.set_auto_ret_blackscreen()
+        cg.set_auto_login()
+        cg.set_auto_select_charater()
+    
+    def on_stop(self, cg: happy.Cg):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+        """
+        cg.set_auto_ret_blackscreen(False)
+        cg.set_auto_login(False)
+        cg.set_auto_select_charater(False)
+    
+
     def on_not_moving(self, cg: happy.Cg):
         """_summary_
 
@@ -157,6 +181,7 @@ class Script(happy.Script):
                 cg.sell()
             return
 
+
     def on_enable(self, enable):
         self.sell_record = []
 
@@ -164,7 +189,7 @@ class Script(happy.Script):
 
         if cg.is_disconnected:
             self.enable = False
-            send_wechat_notification(f"{cg.account},{cg.player.name} 已掉线")
+            send_wechat_notification(f"{cg.account} {cg.player.name} 已掉线")
             return
 
         cg.nop_shell()
@@ -200,11 +225,19 @@ class Script(happy.Script):
                 print(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
                 self.enable = False
 
+    def on_not_battle(self, cg: happy.Cg):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+        """
         # 受伤处理
         if cg.player.injury:
             # send_wechat_notification(f"{cg.player.name} 受伤程度{cg.player.injury} ，停止脚本")
-            print(f"{cg.player.name} 受伤程度{cg.player.injury} ，停止脚本")
+            print(f"{cg.player.name} 受伤程度{cg.player.injury} 停止脚本")
+            send_wechat_notification(f"{cg.account} {cg.player.name} 受伤程度{cg.player.injury} 停止脚本")
             self.enable = False
+
 
     @property
     def efficiency(self):

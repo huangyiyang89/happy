@@ -11,7 +11,6 @@ import sys
 import random
 from typing import Literal
 import psutil
-import requests
 import happy.unit
 import happy.player
 import happy.pet
@@ -41,8 +40,6 @@ class Cg(Service):
         self.items = ItemCollection(mem)
         self._scripts: list[happy.script.Script] = []
         self.is_closed = False
-        self._last_captcha_code = ""
-        self._is_disconnected_check_var = (0, 0)
         self._last_update_time = 0
 
     @property
@@ -119,6 +116,12 @@ class Cg(Service):
 
         for script in self._scripts:
             if script.enable:
+                if script.state == 1:
+                    script.on_start(self)
+                    script.state = 2
+                if script.state == 3:
+                    script.on_stop(self)
+                    script.state = 0
                 script.on_update(self)
                 if self.battle.is_fighting:
                     script.on_battle(self)
@@ -232,7 +235,7 @@ class Cg(Service):
         """
         self._decode_send(f"zA {self.map.x_62} {self.map.y_62} {direction} 0")
 
-    def load_script(self, file_path, module_name, class_name, enable=False):
+    def load_script(self, file_path, module_name, class_name):
         """_summary_
 
         Args:
@@ -252,7 +255,6 @@ class Cg(Service):
             script_class = getattr(module, class_name)
             instance = script_class()
             if isinstance(instance, happy.script.Script):
-                instance.enable = enable
                 self._scripts.append(instance)
 
             print(f"'{class_name}' from module '{module_name}' loaded successfully.")
@@ -462,23 +464,6 @@ class Cg(Service):
         self.mem.write_bytes(0x00530CB9, bytes.fromhex("90 90 90 90 90"), 5)
         self.mem.write_int(0x0057E998, 2)
 
-    def get_captcha(self):
-        """_summary_
-
-        Returns:
-            _type_: _description_
-        """
-        code = self.mem.read_string(0x00C32D4E, 10)
-        if (
-            code != ""
-            and code.isdigit()
-            and len(code) == 10
-            and self._last_captcha_code != code
-        ):
-            self._last_captcha_code = code
-            return code
-        return None
-
     @staticmethod
     def close_handles():
         """_summary_"""
@@ -486,40 +471,13 @@ class Cg(Service):
         handles = happy.pywinhandle.find_handles(process_ids, ["汢敵"])
         happy.pywinhandle.close_handles(handles)
 
-    def send_wechat_notification(self):
-        """_summary_
-
-        Args:
-            content (_type_): _description_
-        """
-        code = self.get_captcha()
-        if code is not None:
-            url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=e0ce689b-5a47-4ae2-ab5e-0539268956d7"
-            payload = {
-                "msgtype": "markdown",
-                "markdown": {
-                    "content": f"### 账号: {self.account}\n### 验证链接:\n[https://www.bluecg.net/plugin.php?id=gift:v3&ac={self.account}&time={code}](https://www.bluecg.net/plugin.php?id=gift:v3&ac={self.account}&time={code})"
-                },
-            }
-            headers = {"Content-Type": "application/json"}
-
-            response = requests.post(url, json=payload, headers=headers, timeout=1000)
-
-            if response.status_code == 200:
-                print("Markdown message sent successfully.")
-            else:
-                print(
-                    "Failed to send Markdown message. Status code:",
-                    response.status_code,
-                )
-
     def solve_if_captch(self):
         """_summary_"""
-        code = self.get_captcha()
-        if code is not None:
+        code = self.mem.read_string(0x00C32D4E, 10)
+        if code != "" and code.isdigit() and len(code) == 10:
             success = solve_captcha(self.account, code)
-            return success
-        return None
+            if success:
+                self.mem.write_string(0x00C32D4E, "\0\0\0\0\0\0\0\0\0\0")
 
     def drop_item(self, *args):
         """仍物品，*args可为Item示例或物品名string
@@ -562,13 +520,85 @@ class Cg(Service):
         """
         # 0x00D10EB0 0x00D10EB1 0x00D10EB2
         value = self.mem.read_bytes(0x00D10EB2, 1)
-        flag = int.from_bytes(value,byteorder='little')
-        return  flag > 0
+        flag = int.from_bytes(value, byteorder="little")
+        return flag > 0
 
     def nop_shell(self):
-        """_summary_"""
+        """禁止游戏弹出网页"""
         # for module in self.mem.list_modules():
         #     if module.name == "shell32.dll":
         #         print(module)
         pointer = self.mem.read_int(0x0053E220)
-        self.mem.write_bytes(pointer, bytes.fromhex("C3 90"), 2)
+        self.mem.write_bytes(pointer, bytes.fromhex("C2 04 00"), 3)
+
+    def set_auto_login(self, enable=True,line=0):
+        """_summary_
+
+        Args:
+            line (int, optional): 几线. Defaults to 0.
+            enable (bool, optional): _description_. Defaults to True.
+        """
+        # 00458C40 函数开头
+        # 00458EF7  89 35 44 76 92 00 改 BE 01 00 00 00 90
+        #                                写入几线
+        # 00458E1B  E8 80 F0 FF FF 改 B8 D3 00 00 00 过跳转
+        if not isinstance(line,int):
+            return
+        if enable:
+            line_str = str(line).zfill(2)
+            self.mem.write_bytes(
+                0x00458EF7, bytes.fromhex(f"BE {line_str} 00 00 00 90"), 6
+            )
+            self.mem.write_bytes(0x00458E1B, bytes.fromhex("B8 D3 00 00 00"), 5)
+        else:
+            self.mem.write_bytes(0x00458EF7, bytes.fromhex("89 35 44 76 92 00"), 6)
+            self.mem.write_bytes(0x00458E1B, bytes.fromhex("E8 80 F0 FF FF"), 5)
+            
+
+    def set_auto_select_charater(self, enable=True):
+        """_summary_
+
+        Args:
+            enable (bool, optional): _description_. Defaults to True.
+        """
+        # call start at 0045A285
+        #                                                              0/1左侧右侧角色
+        # 0045A2A0 原83 F8 06 0F 87 0D 04 00 00 改 B8 01 00 00 00 66 BB 01 00
+        character = self.mem.read_int(0x00F627F8)
+        if enable:
+            if character == 0:
+                self.mem.write_bytes(
+                    0x0045A2A0, bytes.fromhex("B8 01 00 00 00 66 BB 00 00"), 9
+                )
+            else:
+                self.mem.write_bytes(
+                    0x0045A2A0, bytes.fromhex("B8 01 00 00 00 66 BB 01 00"), 9
+                )
+        else:
+            self.mem.write_bytes(
+                0x0045A2A0, bytes.fromhex("83 F8 06 0F 87 0D 04 00 00"), 9
+            )
+
+    def set_auto_ret_blackscreen(self, enable=True):
+        """_summary_
+
+        Args:
+            enable (bool, optional): _description_. Defaults to True.
+        """
+        # 005122DB  黑屏跳出 0F 84 4D FF FF FF 改90 90 90 90 90 90
+        if enable:
+            self.mem.write_bytes(0x005122DB, bytes.fromhex("90 90 90 90 90 90"), 6)
+        else:
+            self.mem.write_bytes(0x005122DB, bytes.fromhex("0F 84 4D FF FF FF"), 6)
+
+    @property
+    def state(self):
+        """输入账号界面=1 服务器选择=2 角色选择=3 角色创建=4 登陆中=6 游戏中=9 战斗中=10 掉线黑屏=11
+
+        Returns:
+            _type_: int
+        """
+        # 00F62930
+        return self.mem.read_int(0x00F62930)
+
+

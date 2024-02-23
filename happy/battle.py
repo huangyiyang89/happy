@@ -24,7 +24,7 @@ class Battle(happy.service.Service):
         Returns:
             bool: _description_
         """
-        return self.mem.read_short(0x0072B9D0) > 0
+        return self.mem.read_int(0x00F62930) == 10
 
     @property
     def is_player_turn(self)-> bool:
