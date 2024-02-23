@@ -7,6 +7,7 @@ import logging
 import customtkinter
 import happy.core
 import happy.script
+from happy.util import timer
 
 logging.basicConfig(
     filename="unhappy.log",
@@ -22,7 +23,7 @@ class App(customtkinter.CTk):
     Args:
         customtkinter (_type_): _description_
     """
-
+    
     def on_button_click(self):
         """_summary_"""
         happy.Cg.close_handles()
@@ -46,7 +47,8 @@ class App(customtkinter.CTk):
 
         self.cgframes: list[Cgframe] = []
         self.refresh()
-
+    
+    
     def refresh(self):
         """_summary_"""
 
@@ -61,6 +63,7 @@ class App(customtkinter.CTk):
         else:
             self.after(3000, self.refresh)
 
+    
     def remove_destroyed_frames(self):
         """_summary_"""
         count = len(self.cgframes)
@@ -68,6 +71,7 @@ class App(customtkinter.CTk):
             if not self.cgframes[i].winfo_exists():
                 self.cgframes.pop(i)
 
+    
     def grid_all_frames(self):
         """_summary_"""
         count = len(self.cgframes)
@@ -161,8 +165,7 @@ class Cgframe(customtkinter.CTkFrame):
         self.after(3000, self.update_ui)
 
     def switch_event(self, switch_var: customtkinter.BooleanVar, script: happy.Script):
-        """_summary_"""
-        
+        """_summary_"""       
         if switch_var.get():
             script.start()
         else:

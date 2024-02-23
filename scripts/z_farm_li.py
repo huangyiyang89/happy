@@ -31,7 +31,8 @@ class Script(happy.Script):
         cg.set_auto_ret_blackscreen()
         cg.set_auto_login()
         cg.set_auto_select_charater()
-    
+        cg.disable_shell()
+
     def on_stop(self, cg: happy.Cg):
         """_summary_
 
@@ -41,7 +42,7 @@ class Script(happy.Script):
         cg.set_auto_ret_blackscreen(False)
         cg.set_auto_login(False)
         cg.set_auto_select_charater(False)
-    
+        cg.disable_shell(False)
 
     def on_not_moving(self, cg: happy.Cg):
         """_summary_
@@ -73,10 +74,13 @@ class Script(happy.Script):
                 cg.tp()
             else:
                 cg.go_astar(21, 126)
+            return
 
         # 亚诺曼医院
         if cg.map.id == 30105:
             cg.tp()
+            time.sleep(1)
+            return
 
         # 德威特岛
         if cg.map.id == 30001:
@@ -84,6 +88,7 @@ class Script(happy.Script):
             cg.go_if(159, 346, 153, 315)
             cg.go_if(153, 315, 122, 306)
             cg.go_if(122, 306, 129, 295)
+            return
 
         # 里洞（外）
         if cg.map.id == 32511:
@@ -93,6 +98,7 @@ class Script(happy.Script):
                 cg.go_if(24, 19, 24, 7)
                 cg.go_if(24, 7, 24, 19)
                 cg.go_astar(24, 19)
+            return
 
         if "地下" in cg.map.name:
             # cg.map.read_data()
@@ -120,12 +126,19 @@ class Script(happy.Script):
                         cg.map.x + random.randint(-5, 5),
                         cg.map.y + random.randint(-5, 5),
                     )
+            return
 
         if "底層" in cg.map.name:
             if cg.map.x == 13:
                 cg.go_to(12, 6)
+                
             else:
                 cg.go_to(13, 6)
+            return
+        
+        print("状态异常 TP")
+        cg.tp()
+        time.sleep(1)
 
     def go_to_heal(self, cg: happy.Cg):
         """_summary_
@@ -184,15 +197,7 @@ class Script(happy.Script):
 
     def on_update(self, cg: happy.Cg):
 
-
         cg.retry_if_login_failed()
-        
-        if cg.is_disconnected:
-            self.stop()
-            send_wechat_notification(f"{cg.account} {cg.player.name} 已掉线")
-            return
-
-        cg.nop_shell()
 
         if "地下" in cg.map.name:
             cg.map.read_data()
@@ -209,8 +214,6 @@ class Script(happy.Script):
             if cg.items.gold > self.sell_record[-1][0]:
                 self.sell_record.append((cg.items.gold, time.time()))
 
-
-
     def on_not_battle(self, cg: happy.Cg):
         """_summary_
 
@@ -221,9 +224,11 @@ class Script(happy.Script):
         if cg.player.injury:
             # send_wechat_notification(f"{cg.player.name} 受伤程度{cg.player.injury} ，停止脚本")
             print(f"{cg.player.name} 受伤程度{cg.player.injury} 停止脚本")
-            send_wechat_notification(f"{cg.account} {cg.player.name} 受伤程度{cg.player.injury} 停止脚本")
+            send_wechat_notification(
+                f"{cg.account} {cg.player.name} 受伤程度{cg.player.injury} 停止脚本"
+            )
             self.stop()
-        
+
         # 武器损坏装备背包内武器
         if cg.state == 9 and not cg.items[2].valid:
             gong = cg.items.find(item_name="弓")
@@ -231,9 +236,7 @@ class Script(happy.Script):
                 cg.use_item(gong)
             else:
                 # send_wechat_notification(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
-                print(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
-                self.stop()
-
+                print(f"{cg.player.name} 武器损坏，背包未找到")
 
     @property
     def efficiency(self):

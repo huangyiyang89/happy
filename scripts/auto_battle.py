@@ -53,7 +53,6 @@ class Script(happy.Script):
             if a != b:
                 pass
             else:
-                # time.sleep(1)
                 self.strategy.player_action(cg)
 
     def on_pet_turn(self, cg: happy.Cg):

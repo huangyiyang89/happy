@@ -176,19 +176,19 @@ def solve_captcha(account,code) -> bool:
     for i in range(5):
         captcha_response = scraper.get(captcha_url)
         captcha_image_buffer = captcha_response.content
-        with open(account+"_code.gif", "wb") as f:
+        with open(account+".gif", "wb") as f:
             f.write(captcha_image_buffer)
-        img = Image.open(account+"_code.gif")
+        img = Image.open(account+".gif")
         max_duration = 0
         for frame in ImageSequence.Iterator(img):
             duration = frame.info["duration"]
             if duration > max_duration:
-                frame.save(account+"_code.png")
+                frame.save(account+".png")
                 max_duration = duration
 
         # recognize captcha image
         dddocr = DdddOcr()
-        with open(account+"_code.png", "rb") as f:
+        with open(account+".png", "rb") as f:
             image_bytes = f.read()
             verifycode = dddocr.classification(image_bytes)
 
@@ -212,6 +212,7 @@ def solve_captcha(account,code) -> bool:
     }
 
     res = scraper.post(url, data=data)
+    print(res)
     return True
 
 

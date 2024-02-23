@@ -20,7 +20,7 @@ from happy.mem import CgMem
 from happy.battle import Battle
 from happy.service import Service
 from happy.item import Item, ItemCollection
-from happy.util import b62, merge_path, solve_captcha
+from happy.util import b62, merge_path, solve_captcha,timer
 import happy.pywinhandle
 
 
@@ -83,9 +83,10 @@ class Cg(Service):
         while self._is_running:
             try:
                 self.update()
-                time.sleep(0.1)
+                time.sleep(0.2)
             except Exception as e:  # pylint: disable=broad-except
                 logging.warning(e)
+                print(e)
                 if self.process_is_closed():
                     logging.warning("游戏进程已关闭，释放对象。")
                     self.close()
@@ -137,7 +138,7 @@ class Cg(Service):
                         script.on_pet_turn(self)
                     elif self.battle.is_pet_second_turn:
                         script.on_pet_second_turn(self)
-                    
+
     def go_to(self, x, y):
         """_summary_
 
@@ -235,6 +236,7 @@ class Cg(Service):
         """
         self._decode_send(f"zA {self.map.x_62} {self.map.y_62} {direction} 0")
 
+    @timer
     def load_script(self, file_path, module_name, class_name):
         """_summary_
 
@@ -271,6 +273,7 @@ class Cg(Service):
         first_food = next(
             (food for food in self.items.foods if food.name not in excepts), None
         )
+
         if first_food is not None:
 
             def open_box_if_no_food():
@@ -287,7 +290,7 @@ class Cg(Service):
                 open_box_if_no_food()
             if (
                 self.pets.battle_pet.mp_max - self.pets.battle_pet.mp >= lose_mp
-                and self.pets.battle_pet.mp < 200
+                and self.pets.battle_pet.mp < 300
                 and self.pets.battle_pet.has_power_magic_skill()
             ):
                 self.use_item(first_food)
@@ -519,19 +522,23 @@ class Cg(Service):
             bool: _description_
         """
         # 0x00D10EB0 0x00D10EB1 0x00D10EB2
-        value = self.mem.read_bytes(0x00D10EB2, 1)
-        flag = int.from_bytes(value, byteorder="little")
-        return flag > 0
+        #value = self.mem.read_bytes(0x00D10EB2, 1)
+        #flag = int.from_bytes(value, byteorder="little")
+        
+        return not self.state in (9,10)
 
-    def nop_shell(self):
+    def disable_shell(self,enable = True):
         """禁止游戏弹出网页"""
         # for module in self.mem.list_modules():
         #     if module.name == "shell32.dll":
         #         print(module)
         pointer = self.mem.read_int(0x0053E220)
-        self.mem.write_bytes(pointer, bytes.fromhex("C2 04 00"), 3)
+        if enable:
+            self.mem.write_bytes(pointer, bytes.fromhex("C2 04 00"), 3)
+        else:
+            self.mem.write_bytes(pointer, bytes.fromhex("8B FF 55"), 3)
 
-    def set_auto_login(self, enable=True,line=0):
+    def set_auto_login(self, enable=True):
         """_summary_
 
         Args:
@@ -543,31 +550,30 @@ class Cg(Service):
         #                                写入几线
         # 00458E1B  E8 80 F0 FF FF 改 B8 D3 00 00 00 过跳转
 
-        #处理重连失败弹窗
-        #00458CB9 39 35 54 29 F6 00 0F 85 69 02 00 00 改C7 05 54 29 F6 00 01 00 00 00 90 90
+        # 处理重连失败弹窗
+        # 00458CB9 39 35 54 29 F6 00 0F 85 69 02 00 00 改C7 05 54 29 F6 00 01 00 00 00 90 90
 
-        if not isinstance(line,int):
-            return
         if enable:
+            line = self.mem.read_int(0x00927644)
             line_str = str(line).zfill(2)
             self.mem.write_bytes(
                 0x00458EF7, bytes.fromhex(f"BE {line_str} 00 00 00 90"), 6
             )
             self.mem.write_bytes(0x00458E1B, bytes.fromhex("B8 D3 00 00 00"), 5)
-            #self.mem.write_bytes(0x00458CB9,bytes.fromhex("C7 05 54 29 F6 00 01 00 00 00 90 90"),12)
+            # self.mem.write_bytes(0x00458CB9,bytes.fromhex("C7 05 54 29 F6 00 01 00 00 00 90 90"),12)
         else:
             self.mem.write_bytes(0x00458EF7, bytes.fromhex("89 35 44 76 92 00"), 6)
             self.mem.write_bytes(0x00458E1B, bytes.fromhex("E8 80 F0 FF FF"), 5)
-            #self.mem.write_bytes(0x00458CB9,bytes.fromhex("39 35 54 29 F6 00 0F 85 69 02 00 00"),12)
-            
+            # self.mem.write_bytes(0x00458CB9,bytes.fromhex("39 35 54 29 F6 00 0F 85 69 02 00 00"),12)
+
     def retry_if_login_failed(self):
-        """_summary_
-        """
-        #1没有小窗 3正在连接
+        """_summary_"""
+        # 1没有小窗 3正在连接
         if self.state == 2:
             state = self.mem.read_int(0x00F62954)
-            if not (state == 3 or state == 1):
-                self.mem.write_int(0x00F62954,1)
+            if not state in (1,3):
+                print("尝试重连")
+                self.mem.write_int(0x00F62954, 1)
                 time.sleep(1)
 
     def set_auto_select_charater(self, enable=True):
@@ -615,5 +621,3 @@ class Cg(Service):
         """
         # 00F62930
         return self.mem.read_int(0x00F62930)
-
-

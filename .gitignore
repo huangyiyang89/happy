@@ -182,12 +182,9 @@ pyu-data/
 .pyupdater/
 
 #icon
-*.ico
 *.gif
 *.png
 *.jpg
+*.ico
 
 # End of https://www.toptal.com/developers/gitignore/api/python
-
-hanxu04_code.gif
-hanxu04_code.png
