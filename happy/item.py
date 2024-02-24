@@ -223,6 +223,12 @@ class ItemCollection(happy.service.Service):
         """整理背包，直接调用游戏聊天框/r"""
         self._decode_send("uSr 19 1k P|/r")
 
+    @property
+    def first_food(self)->Item|None:
+        """_summary_
+        """
+        return next((food for food in self.foods if food.name not in "魅惑的哈密瓜麵包"), None)
+
     def find(self, item_name="", quantity=0):
         """模糊匹配包含item_name的第一个物品
 

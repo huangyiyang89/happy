@@ -37,12 +37,14 @@ class Script:
 
     def start(self):
         """设置state = 1 等待开始"""
-        self._state = 1
+        if self.state in (0,3):
+            self.state = 1
 
 
     def stop(self):
         """设置state = 3 等待结束"""
-        self._state = 3
+        if self.state in (1,2):
+            self.state = 3
 
     def on_start(self, cg):
         """_summary_"""

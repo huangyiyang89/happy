@@ -120,11 +120,13 @@ class Cg(Service):
                 if script.state == 1:
                     script.on_start(self)
                     script.state = 2
+                    return
                 if script.state == 3:
                     script.on_stop(self)
                     script.state = 0
+                    return
                 script.on_update(self)
-                if self.state == 9:
+                if self.state == 9 and self.state2 == 3:
                     script.on_not_battle(self)
                     if not self.is_moving:
                         script.on_not_moving(self)
@@ -270,14 +272,13 @@ class Cg(Service):
     def eat_food(self, lose_mp=600, excepts="魅惑的哈密瓜麵包"):
         """对玩家使用物品栏中第一个类型为料理的物品"""
 
-        first_food = next(
-            (food for food in self.items.foods if food.name not in excepts), None
-        )
+        first_food = self.items.first_food
 
         if first_food is not None:
 
             def open_box_if_no_food():
-                if first_food.count == 1:
+                count = len(self.items.update().foods)
+                if count> 0:
                     box = self.items.find_box(first_food.name)
                     self.use_item(box)
 
@@ -631,3 +632,12 @@ class Cg(Service):
         """
         # 00F62930
         return self.mem.read_int(0x00F62930)
+
+    @property
+    def state2(self):
+        """输入账号界面= 服务器选择=1 角色选择=11 游戏中=3 战斗输入指令中=4 等待战斗动画中=6   遇敌 5-1-2-3-4  退出战斗2-8-11-2-3
+
+        Returns:
+            _type_: int
+        """
+        return self.mem.read_int(0x00F62954)
