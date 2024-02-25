@@ -116,6 +116,43 @@ class Item:
         """
         return self._type
 
+    @property
+    def is_food(self):
+        """except 魅惑的哈密瓜麵包
+
+        Returns:
+            _type_: _description_
+        """
+        return self.type == 23 and self.name != "魅惑的哈密瓜麵包"
+
+    @property
+    def is_drug(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.type == 43
+
+    @property
+    def is_food_box(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+
+        return bool(
+            self.name
+            in (
+                "開封『壽喜鍋』盒",
+                "『壽喜鍋』盒",
+                "開封『壽喜鍋』盒",
+                "『魚翅湯』盒",
+                "開封『魚翅湯』盒",
+            )
+        )
+
 
 class ItemCollection(happy.service.Service):
     """_summary_
@@ -224,10 +261,20 @@ class ItemCollection(happy.service.Service):
         self._decode_send("uSr 19 1k P|/r")
 
     @property
-    def first_food(self)->Item|None:
-        """_summary_
-        """
-        return next((food for food in self.foods if food.name not in "魅惑的哈密瓜麵包"), None)
+    def first_food(self) -> Item | None:
+        """_summary_"""
+        for item in self._items:
+            if item.is_food:
+                return item
+        return None
+
+    @property
+    def first_food_box(self) -> Item | None:
+        """_summary_"""
+        for item in self._items:
+            if item.is_food_box:
+                return item
+        return None
 
     def find(self, item_name="", quantity=0):
         """模糊匹配包含item_name的第一个物品
@@ -263,8 +310,8 @@ class ItemCollection(happy.service.Service):
                 return item
         return None
 
-    def find_food_box(self):
-        """_summary_
+    def open_food_box(self):
+        """打开食物盒子(如果有)
 
         Args:
             name (str, optional): _description_. Defaults to "".
@@ -272,13 +319,11 @@ class ItemCollection(happy.service.Service):
         Returns:
             _type_: _description_
         """
+        # food_box = ("『蕃茄醬』","『麵包』","『壽喜鍋』","『咖哩飯』","『韓式泡菜飯』","『螃蟹鍋』","『牛排』","『魚翅湯』","『鱉料理』","『韓式海鮮鍋』","『叉燒飯』")
         for item in self._items:
-            if item.valid == 1 and (
-                "『壽喜鍋』" in item.name or "『魚翅湯』" in item.name
-            ):
+            if "『壽喜鍋』" in item.name or "『魚翅湯』" in item.name:
                 return item
         return None
-
 
     def weapon_is_gong(self):
         """_summary_

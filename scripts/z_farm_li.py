@@ -61,7 +61,7 @@ class Script(happy.Script):
             self.go_to_heal(cg)
             return
 
-        if cg.player.hp_per < 30 or cg.player.mp < 60 or cg.pets.battle_pet.hp_per < 30:
+        if cg.player.hp_per < 40 or cg.player.mp < 60 or cg.pets.battle_pet.hp_per < 30:
             self.go_to_heal(cg)
             return
 

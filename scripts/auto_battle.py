@@ -17,7 +17,6 @@ class Script(happy.Script):
         self.strategy = None
         self.enable_use_potion = False
         self.force_use_first_skill = False
-        self.try_to_eat = False
 
     def on_update(self, cg: happy.Cg):
         """_summary_
@@ -35,8 +34,6 @@ class Script(happy.Script):
         """
         if self.strategy is None or self.strategy.job_name != cg.player.job_name:
             self.strategy = Strategy.get_strategy(cg)
-
-        self.try_to_eat = False
 
     def on_player_turn(self, cg: happy.Cg):
         """_summary_
@@ -64,9 +61,7 @@ class Script(happy.Script):
         self.strategy.pet_action(cg)
 
     def on_not_battle(self, cg: happy.Cg):
-        if not self.try_to_eat:
-            cg.eat_food()
-        self.try_to_eat = True
+        cg.eat_food()
         cg.call_nurse()
 
 

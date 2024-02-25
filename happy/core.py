@@ -20,7 +20,7 @@ from happy.mem import CgMem
 from happy.battle import Battle
 from happy.service import Service
 from happy.item import Item, ItemCollection
-from happy.util import b62, merge_path, solve_captcha, timer
+from happy.util import b62, merge_path, solve_captcha
 import happy.pywinhandle
 
 
@@ -41,6 +41,7 @@ class Cg(Service):
         self._scripts: list[happy.script.Script] = []
         self.is_closed = False
         self._last_update_time = 0
+        self.try_to_eat = 0
 
     @property
     def _tick_count(self):
@@ -238,7 +239,6 @@ class Cg(Service):
         """
         self._decode_send(f"zA {self.map.x_62} {self.map.y_62} {direction} 0")
 
-    @timer
     def load_script(self, file_path, module_name, class_name):
         """_summary_
 
@@ -269,47 +269,51 @@ class Cg(Service):
             )
             return None
 
-    def eat_food(self, lose_mp=600, excepts="魅惑的哈密瓜麵包"):
+    def eat_food(self):
         """对玩家使用物品栏中第一个类型为料理的物品"""
 
+        if self.battle.is_fighting:
+            self.try_to_eat = 0
+            return
+
         first_food = self.items.first_food
+        if first_food is None:
+            box = self.items.first_food_box
+            if box:
+                self.use_item(box)
+            return
 
-        if first_food is not None:
+        re_mp = 600
+        if first_food.name == "魚翅湯":
+            re_mp = 1000
+        if first_food.name == "壽喜鍋":
+            re_mp = 600
+        if first_food.name == "漢堡":
+            re_mp = 450
+        if first_food.name == "麵包":
+            re_mp = 100
 
-            def open_box_if_no_food():
-                count = len(self.items.update().foods)
-                if count> 0:
-                    box = self.items.find_box(first_food.name)
-                    self.use_item(box)
+        if self.try_to_eat in (0, 1) and self.player.mp_max - self.player.mp >= re_mp:
+            self.use_item(first_food)
+            self.select_target()
+            self._decode_send(
+                f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} 0"
+            )
+            self.try_to_eat += 2
 
-            re_mp = lose_mp
-            if first_food.name == "魚翅湯":
-                re_mp = 1000
-            if first_food.name == "壽喜鍋":
-                re_mp = 600
-            if first_food.name == "漢堡":
-                re_mp = 450
-            if first_food.name == "麵包":
-                re_mp = 100
-
-            if self.player.mp_max - self.player.mp >= re_mp:
-                self.use_item(first_food)
-                self.select_target()
-                self._decode_send(
-                    f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} 0"
-                )
-                open_box_if_no_food()
-            if (
-                self.pets.battle_pet.mp_max - self.pets.battle_pet.mp >= re_mp
-                and self.pets.battle_pet.mp < 300
-                and self.pets.battle_pet.has_power_magic_skill()
-            ):
-                self.use_item(first_food)
-                self.select_target()
-                self._decode_send(
-                    f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} {self.pets.battle_pet.index+1}"
-                )
-                open_box_if_no_food()
+        if (
+            self.try_to_eat in (0, 2)
+            and self.pets.battle_pet
+            and self.pets.battle_pet.mp_max - self.pets.battle_pet.mp >= re_mp
+            and self.pets.battle_pet.mp < 300
+            and self.pets.battle_pet.has_power_magic_skill()
+        ):
+            self.use_item(first_food)
+            self.select_target()
+            self._decode_send(
+                f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} {self.pets.battle_pet.index+1}"
+            )
+            self.try_to_eat += 1
 
     def eat_drug(self, lose_hp=400, excepts=""):
         """对玩家使用物品栏中第一个类型为药的物品"""
@@ -333,7 +337,10 @@ class Cg(Service):
         Args:
             item (Item): _description_
         """
-        self._decode_send(f"Ak {self.map.x_62} {self.map.y_62} {item.index_62} 0")
+        if item:
+            self._decode_send(f"Ak {self.map.x_62} {self.map.y_62} {item.index_62} 0")
+        else:
+            print("Item is None")
 
     def select_target(self):
         """_summary_"""
