@@ -41,7 +41,7 @@ class Cg(Service):
         self._scripts: list[happy.script.Script] = []
         self.is_closed = False
         self._last_update_time = 0
-        self.try_to_eat = 0
+        self._eat_food_flag = 0
 
     @property
     def _tick_count(self):
@@ -132,6 +132,7 @@ class Cg(Service):
                     if not self.is_moving:
                         script.on_not_moving(self)
                 if self.battle.is_fighting:
+                    self._eat_food_flag = 0
                     script.on_battle(self)
                     if self.battle.is_player_turn:
                         script.on_player_turn(self)
@@ -181,18 +182,21 @@ class Cg(Service):
         """
         if map_id is not None:
             if self.map.id != map_id:
-                return
+                return False
         if (x1 <= self.map.x <= x2 or x2 <= self.map.x <= x1) and (
             y1 <= self.map.y <= y2 or y2 <= self.map.y <= y1
         ):
             if x3 is not None and y3 is not None:
                 if not (self.map.x == x3 and self.map.y == y3):
                     self.go_to(x3, y3)
+                    return True
 
             if x3 is None and y3 is None:
                 if self.map.x == x2 and self.map.y == y2:
-                    return
+                    return False
                 self.go_to(x2, y2)
+                return True
+        return False
 
     def go_astar(self, x, y):
         """_summary_
@@ -273,7 +277,7 @@ class Cg(Service):
         """对玩家使用物品栏中第一个类型为料理的物品"""
 
         if self.battle.is_fighting:
-            self.try_to_eat = 0
+            self._eat_food_flag = 0
             return
 
         first_food = self.items.first_food
@@ -293,16 +297,17 @@ class Cg(Service):
         if first_food.name == "麵包":
             re_mp = 100
 
-        if self.try_to_eat in (0, 1) and self.player.mp_max - self.player.mp >= re_mp:
+        if self._eat_food_flag in (0, 1) and self.player.mp_max - self.player.mp >= re_mp:
             self.use_item(first_food)
             self.select_target()
             self._decode_send(
                 f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} 0"
             )
-            self.try_to_eat += 2
+            self._eat_food_flag += 2
+            return
 
         if (
-            self.try_to_eat in (0, 2)
+            self._eat_food_flag in (0, 2)
             and self.pets.battle_pet
             and self.pets.battle_pet.mp_max - self.pets.battle_pet.mp >= re_mp
             and self.pets.battle_pet.mp < 300
@@ -313,7 +318,7 @@ class Cg(Service):
             self._decode_send(
                 f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} {self.pets.battle_pet.index+1}"
             )
-            self.try_to_eat += 1
+            self._eat_food_flag += 1
 
     def eat_drug(self, lose_hp=400, excepts=""):
         """对玩家使用物品栏中第一个类型为药的物品"""
