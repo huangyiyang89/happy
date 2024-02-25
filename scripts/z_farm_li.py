@@ -140,6 +140,10 @@ class Script(happy.Script):
         cg.tp()
         time.sleep(1)
 
+
+    def go_to_hospital(self, cg: happy.Cg):
+        if cg.map.name is
+
     def go_to_heal(self, cg: happy.Cg):
         """_summary_
 
@@ -195,6 +199,16 @@ class Script(happy.Script):
                 cg.sell()
             return
 
+    def go_to_cure(self,cg: happy.Cg):
+        pass
+
+    def go_to_buy_bow(self,cg: happy.Cg):
+        pass
+
+    def go_to_buy_crystal(self,cg: happy.Cg):
+        pass
+
+
     def on_update(self, cg: happy.Cg):
 
         cg.retry_if_login_failed()
@@ -228,15 +242,20 @@ class Script(happy.Script):
                 f"{cg.account} {cg.player.name} 受伤程度{cg.player.injury} 停止脚本"
             )
             self.stop()
+            self.go_to_cure(cg)
 
         # 武器损坏装备背包内武器
-        if cg.state == 9 and not cg.items[2].valid:
+        if not cg.items[2].valid:
             gong = cg.items.find(item_name="弓")
             if gong:
                 cg.use_item(gong)
             else:
                 # send_wechat_notification(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
                 print(f"{cg.player.name} 武器损坏，背包未找到")
+            self.go_to_buy_bow(cg)
+
+        if not cg.items[7].valid:
+            self.go_to_buy_crystal(cg)
 
     @property
     def efficiency(self):
