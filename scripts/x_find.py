@@ -8,11 +8,12 @@ class Script(happy.Script):
         happy (_type_): _description_
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self,cg) -> None:
+        super().__init__(cg)
         self.name = "迷宫寻路"
 
     def on_not_moving(self, cg: happy.Cg):
+
         if "黃金迷宮一階段地下49層" in cg.map.name:
             cg.go_astar(cg.map.exits[0][0], cg.map.exits[0][1])
         if "黃金迷宮二階段地下49層" in cg.map.name:

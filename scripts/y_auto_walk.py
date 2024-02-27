@@ -9,8 +9,8 @@ class Script(happy.Script):
         happy (_type_): _description_
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self,cg) -> None:
+        super().__init__(cg)
         self.name = "自动遇敌"
         self.range = 2
         self.start_x = 0

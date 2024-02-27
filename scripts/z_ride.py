@@ -10,8 +10,8 @@ class Script(auto_battle.Script):
         happy (_type_): _description_
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self,cg) -> None:
+        super().__init__(cg)
         self.name = "烧技骑乘"
 
     def on_player_turn(self, cg: happy.Cg):

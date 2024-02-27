@@ -4,9 +4,10 @@
 class Script:
     """Script interface"""
 
-    def __init__(self) -> None:
+    def __init__(self,cg) -> None:
         self._state = 0
         self.name = "no name script"
+        self.cg = cg
 
     @property
     def state(self):

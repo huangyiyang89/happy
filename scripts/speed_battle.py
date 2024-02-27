@@ -10,8 +10,8 @@ class Script(happy.script.Script):
         happy (_type_): _description_
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self,cg) -> None:
+        super().__init__(cg)
         self.name = "高速战斗"
         self.speed = 300
 

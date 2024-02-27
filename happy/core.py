@@ -89,7 +89,7 @@ class Cg(Service):
                 logging.warning(e)
                 print(e)
                 if self.process_is_closed():
-                    logging.warning("游戏进程已关闭，释放对象。")
+                    logging.warning("%s 游戏进程已关闭，释放对象。",self.account)
                     self.close()
 
     def start_loop(self):
@@ -261,7 +261,7 @@ class Cg(Service):
             sys.modules[module_name] = module
             spec.loader.exec_module(module)
             script_class = getattr(module, class_name)
-            instance = script_class()
+            instance = script_class(self)
             if isinstance(instance, happy.script.Script):
                 self._scripts.append(instance)
 
@@ -285,6 +285,7 @@ class Cg(Service):
             box = self.items.first_food_box
             if box:
                 self.use_item(box)
+                time.sleep(0.5)
             return
 
         re_mp = 600
@@ -415,7 +416,7 @@ class Cg(Service):
         Returns:
             _type_: _description_
         """
-        return self.mem.read_int(0x00C32AB0)
+        return self.mem.read_int(0x00CAF1F4)
 
     def call_nurse(self):
         """打开对话窗口后三补"""
@@ -464,7 +465,7 @@ class Cg(Service):
     def sell(self):
         """_summary_"""
         # xD 29 29 5o 54L 0 11\\z3\\z12\\z3\\z13\\z3\\z14\\z3\\z15\\z3\\z16\\z3\\z18\\z3\\z19\\z3\\z21\\z3\\z23\\z3\\z24\\z3\\z25\\z1\\z26\\z2\\z27\\z1
-        unk = self.mem.read_int(0x00CAF1F4)
+        npc_id = self.get_npc_id()
         dialog_type = self.get_dialog_type()
         if dialog_type == 5:
             # npc_type = self.get_npc_type()
@@ -482,7 +483,7 @@ class Cg(Service):
                     count = 1 if "寵物鈴鐺" in item.name else item.count
                     count = 1 if "紙人娃娃" in item.name else count
                     items_str += str(item.index) + r"\\z" + str(count) + r"\\z"
-            content = f"xD {x62} {y62} 5o {b62(unk)} 0 " + items_str[:-3]
+            content = f"xD {x62} {y62} 5o {b62(npc_id)} 0 " + items_str[:-3]
             self._decode_send(content)
 
     def _stop_random_key(self):
@@ -595,9 +596,9 @@ class Cg(Service):
         if self.state == 2:
             state = self.mem.read_int(0x00F62954)
             if not state in (1, 3):
-                print("尝试重连")
+                logging.warning("%s 正在重连",self.account)
                 self.mem.write_int(0x00F62954, 1)
-                time.sleep(1)
+                time.sleep(3)
 
     def set_auto_select_charater(self, enable=True):
         """_summary_
@@ -653,3 +654,24 @@ class Cg(Service):
             _type_: int
         """
         return self.mem.read_int(0x00F62954)
+
+    def cure(self):
+        """亞諾曼治療
+        """
+        npc_id = self.get_npc_id()
+        self._decode_send(f"xD 9 7 5q {b62(npc_id)} 0 7")
+        logging.warning("%s 正在治疗",self.account)
+
+    def buy_crystal(self):
+        """亞諾曼買水晶
+        """
+        npc_id = self.get_npc_id()
+        self._decode_send(f"xD f m 5p {b62(npc_id)} 0 9"+r"\\z1")
+        logging.warning("%s 购买水晶",self.account)
+
+    def buy_bow(self):
+        """亞諾曼買弓
+        """
+        npc_id = self.get_npc_id()
+        self._decode_send(f"xD i d 5p {b62(npc_id)} 0 3"+r"\\z1")
+        logging.warning("%s 购买弓",self.account)

@@ -11,12 +11,18 @@ class Script(happy.Script):
         happy (_type_): _description_
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, cg) -> None:
+        super().__init__(cg)
         self.name = "自动战斗"
         self.strategy = None
         self.enable_use_potion = False
         self.force_use_first_skill = False
+
+    def on_start(self, cg: happy.Cg):
+        cg.disable_shell()
+
+    def on_stop(self, cg: happy.Cg):
+        cg.disable_shell(False)
 
     def on_update(self, cg: happy.Cg):
         """_summary_
@@ -63,6 +69,7 @@ class Script(happy.Script):
     def on_not_battle(self, cg: happy.Cg):
         cg.eat_food()
         cg.call_nurse()
+        cg.solve_if_captch()
 
 
 class Strategy:

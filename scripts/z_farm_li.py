@@ -3,7 +3,7 @@ import time
 import random
 import happy
 from happy.util import send_wechat_notification
-
+import logging
 
 class Script(happy.Script):
     """_summary_
@@ -12,8 +12,8 @@ class Script(happy.Script):
         happy (_type_): _description_
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, cg) -> None:
+        super().__init__(cg)
         self.name = "里洞魔石"
         self.start_time = time.time
         self.sell_record = []
@@ -31,7 +31,6 @@ class Script(happy.Script):
         cg.set_auto_ret_blackscreen()
         cg.set_auto_login()
         cg.set_auto_select_charater()
-        cg.disable_shell()
 
     def on_stop(self, cg: happy.Cg):
         """_summary_
@@ -42,7 +41,6 @@ class Script(happy.Script):
         cg.set_auto_ret_blackscreen(False)
         cg.set_auto_login(False)
         cg.set_auto_select_charater(False)
-        cg.disable_shell(False)
 
     def on_not_moving(self, cg: happy.Cg):
         """_summary_
@@ -50,38 +48,55 @@ class Script(happy.Script):
         Args:
             cg (happy.core.Cg): _description_
         """
-        # 验证码
-        cg.solve_if_captch()
-
-        if cg.items.blanks_count == 0:
-            self.go_to_sell(cg)
+        if cg.player.mp_per != 100 and cg.map.name in ("亞諾曼城", "中央醫院"):
+            self.go_to_heal(cg)
             return
 
-        if cg.player.mp_per != 100 and cg.map.id in (30010, 30105):
-            self.go_to_heal(cg)
+       # 武器损坏装备背包内武器
+        if not cg.items[2].valid:
+            bow = cg.items.find(item_name="弓")
+            if bow:
+                cg.use_item(bow)
+            else:
+                self.go_to_buy_bow(cg)
+            return
+
+        #水晶損壞
+        if not cg.items[7].valid:
+            crystal = cg.items.find(item_name="地水的水晶")
+            if crystal:
+                cg.use_item(crystal)
+            else:
+                self.go_to_buy_crystal(cg)
             return
 
         if cg.player.hp_per < 40 or cg.player.mp < 60 or cg.pets.battle_pet.hp_per < 30:
             self.go_to_heal(cg)
             return
 
-        # 亚诺曼
-        if cg.map.id == 30010:
-            if cg.items.blanks_count < 10:
-                self.go_to_sell(cg)
+        if cg.player.injury:
+            self.go_to_cure(cg)
+            return
+
+        if cg.items.blanks_count == 0:
+            self.go_to_sell(cg)
+            return
+
+        if cg.map.name in "亞諾曼城" and cg.items.blanks_count < 10:
+            self.go_to_sell(cg)
+            return
+
+        # 亞諾曼
+        if cg.map.name in "亞諾曼城":
+            if (cg.map.x, cg.map.y) == (120, 139):
+                cg.right_click("A")
+                time.sleep(0.5)
+            if cg.map.x >= 21 and cg.map.x <= 73 and cg.map.y >= 97 and cg.map.y <= 127:
+                cg.go_if(73, 97, 60, 105)
+                cg.go_if(61, 105, 57, 125)
+                cg.go_if(58, 127, 21, 125)
                 return
-            if cg.map.x > 100:
-                cg.tp()
-            else:
-                cg.go_astar(21, 126)
-            return
-
-        # 亚诺曼医院
-        if cg.map.id == 30105:
             cg.tp()
-            time.sleep(1)
-            return
-
         # 德威特岛
         if cg.map.id == 30001:
             cg.go_if(211, 344, 156, 339, 159, 343)
@@ -101,18 +116,7 @@ class Script(happy.Script):
             return
 
         if "地下" in cg.map.name:
-            # cg.map.read_data()
             if len(cg.map.exits) < 2:
-                #     e1 = random.randint(0, cg.map.width_east)
-                #     e2 = random.randint(0, cg.map.width_east)
-                #     s1 = random.randint(0, cg.map.height_south)
-                #     s2 = random.randint(0, cg.map.height_south)
-                #     cg._decode_send(
-                #         f"UUN 1 {b62(cg.map.id)} {b62(e1)} {b62(s1)} {b62(e2)} {b62(s2)}"
-                #     )
-                # cg._decode_send(
-                #         f"UUN 1 {b62(cg.map.id)} {cg.map.x} {cg.map.y} {b62(cg.map.width_east)} {b62(cg.map.height_south)}"
-                # )
                 cg.go_astar(
                     cg.map.x + random.randint(-5, 5), cg.map.y + random.randint(-5, 5)
                 )
@@ -131,18 +135,31 @@ class Script(happy.Script):
         if "底層" in cg.map.name:
             if cg.map.x == 13:
                 cg.go_to(12, 6)
-                
+
             else:
                 cg.go_to(13, 6)
             return
-        
+
         print("状态异常 TP")
         cg.tp()
         time.sleep(1)
 
-
     def go_to_hospital(self, cg: happy.Cg):
-        if cg.map.name is
+        """_summary_
+
+        Args:
+            cg (happy.Cg): _description_
+        """
+        print("去醫院")
+        if cg.map.name in "亞諾曼城":
+            if cg.map.x < 122 and cg.map.x > 114 and cg.map.y < 141 and cg.map.y > 133:
+                cg.go_to(116, 134)
+                return
+            cg.tp()
+            return
+        if cg.map.name in "中央醫院":
+            return
+        cg.tp()
 
     def go_to_heal(self, cg: happy.Cg):
         """_summary_
@@ -150,26 +167,17 @@ class Script(happy.Script):
         Args:
             cg (happy.Cg): _description_
         """
-        if cg.map.id not in (30010, 30105):
-            print("low hp and map id wrong")
-            cg.tp()
+        print("去補血")
+        if cg.map.name not in "中央醫院":
+            self.go_to_hospital(cg)
             return
-
-        if cg.map.id == 30105:
-            if (cg.map.x, cg.map.y) == (13, 23):
-                cg.right_click("B")
-            else:
-                cg.go_to(13, 23)
+        if cg.map.y > 23:
+            cg.go_to(13, 23)
             return
-
-        if cg.map.id == 30010:
-            if (cg.map.x, cg.map.y) == (68, 100) or (cg.map.x, cg.map.y) == (194, 93):
-                cg.right_click("A")
-                time.sleep(0.5)
-            elif cg.map.x > 134 or cg.map.x < 116 or cg.map.y < 130 or cg.map.y > 147:
-                cg.tp()
-            else:
-                cg.go_if(134, 130, 116, 147, 116, 134)
+        if (cg.map.x, cg.map.y) == (13, 23):
+            cg.right_click("B")
+            return
+        cg.tp()
 
     def go_to_sell(self, cg: happy.Cg):
         """_summary_
@@ -177,14 +185,9 @@ class Script(happy.Script):
         Args:
             cg (happy.Cg): _description_
         """
-        if cg.map.id not in [30105, 30010]:
+        print("去賣魔石")
+        if cg.map.name not in "亞諾曼城":
             cg.tp()
-
-        # 亚诺曼医院
-        if cg.map.id == 30105:
-            cg.go_to(8, 29)
-            return
-
         # 亚诺曼
         if cg.map.id == 30010:
             cg.go_if(116, 130, 136, 142, 133, 133)
@@ -199,14 +202,65 @@ class Script(happy.Script):
                 cg.sell()
             return
 
-    def go_to_cure(self,cg: happy.Cg):
-        pass
+    def go_to_cure(self, cg: happy.Cg):
+        """_summary_
 
-    def go_to_buy_bow(self,cg: happy.Cg):
-        pass
+        Args:
+            cg (happy.Cg): _description_
+        """
+        print("去治療")
+        if cg.map.name not in "中央醫院":
+            self.go_to_hospital(cg)
+            return
+        if cg.map.y > 23:
+            cg.go_to(7, 23)
+            return
+        cg.go_if(13, 23, 7, 17)
+        cg.go_if(7, 23, 7, 9)
+        cg.go_if(7, 9, 9, 7)
+        if (cg.map.x, cg.map.y) == (9, 7):
+            cg.right_click("B")
+            cg.cure()
 
-    def go_to_buy_crystal(self,cg: happy.Cg):
-        pass
+    def go_to_buy_bow(self, cg: happy.Cg):
+        """_summary_
+
+        Args:
+            cg (happy.Cg): _description_
+        """
+        print("去買弓")
+        if cg.map.name in "亞諾曼城":
+            cg.go_if(120,139,93,138)
+            cg.go_if(93,138,93,123)
+            cg.go_if(93,123,100,114)
+            return
+        if cg.map.name in "銳健武器店":
+            if (cg.map.x,cg.map.y)==(18,13):
+                cg.buy_bow()
+            else:
+                cg.go_to(18,13)
+            return
+        cg.tp()
+
+    def go_to_buy_crystal(self, cg: happy.Cg):
+        """_summary_
+
+        Args:
+            cg (happy.Cg): _description_
+        """
+        print("去買水晶")
+        if cg.map.name in "亞諾曼城":
+            cg.go_if(120,139,93,138)
+            cg.go_if(93,138,93,128)
+            cg.go_if(93,128,97,128)
+            return
+        if cg.map.name in "命運小屋":
+            if (cg.map.x,cg.map.y)==(15,22):
+                cg.buy_crystal()
+            else:
+                cg.go_to(15,22)
+            return
+        cg.tp()
 
 
     def on_update(self, cg: happy.Cg):
@@ -218,15 +272,19 @@ class Script(happy.Script):
             if len(cg.map.exits) < 2:
                 cg.map.request_map_data()
 
-        # 仍东西
-        cg.drop_item("卡片", "魔石(18G)")
-
         # 记录效率
         if len(self.sell_record) == 0:
             self.sell_record.append((cg.items.gold, time.time()))
         else:
             if cg.items.gold > self.sell_record[-1][0]:
                 self.sell_record.append((cg.items.gold, time.time()))
+                logging.info("%s 出售魔石,当前魔币:%s",cg.account,cg.items.gold)
+
+            # 疑似挂机停止
+            if time.time()-self.sell_record[-1][1] >=2000:
+                logging.warning("%s 挂机异常,脚本停止,请检查.",cg.account)
+                send_wechat_notification(f"{cg.account} {cg.player.name} 挂机异常,脚本停止,请检查.")
+                self.stop()
 
     def on_not_battle(self, cg: happy.Cg):
         """_summary_
@@ -234,28 +292,11 @@ class Script(happy.Script):
         Args:
             cg (_type_): _description_
         """
-        # 受伤处理
-        if cg.player.injury:
-            # send_wechat_notification(f"{cg.player.name} 受伤程度{cg.player.injury} ，停止脚本")
-            print(f"{cg.player.name} 受伤程度{cg.player.injury} 停止脚本")
-            send_wechat_notification(
-                f"{cg.account} {cg.player.name} 受伤程度{cg.player.injury} 停止脚本"
-            )
-            self.stop()
-            self.go_to_cure(cg)
 
-        # 武器损坏装备背包内武器
-        if not cg.items[2].valid:
-            gong = cg.items.find(item_name="弓")
-            if gong:
-                cg.use_item(gong)
-            else:
-                # send_wechat_notification(f"{cg.player.name} 武器损坏，背包未找到，停止脚本")
-                print(f"{cg.player.name} 武器损坏，背包未找到")
-            self.go_to_buy_bow(cg)
+        
 
-        if not cg.items[7].valid:
-            self.go_to_buy_crystal(cg)
+        # 仍东西
+        cg.drop_item("卡片", "魔石(18G)")
 
     @property
     def efficiency(self):

@@ -29,7 +29,8 @@ class Player(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        return self.mem.read_xor_value(0x00F4C30C)
+        hp_str = self.mem.read_string(0x00CB27EC,4)
+        return int(hp_str)
 
     @property
     def hp_max(self):
@@ -38,7 +39,8 @@ class Player(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        return self.mem.read_xor_value(0x00F4C30C + 16)
+        hp_max_str = self.mem.read_string(0x00CB27F1,4)
+        return int(hp_max_str)
 
     @property
     def hp_per(self):
@@ -69,7 +71,9 @@ class Player(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        return self.mem.read_xor_value(0x00F4C30C + 32)
+        mp_str = self.mem.read_string(0x00CB7900,4)
+        return int(mp_str)
+        
 
     @property
     def mp_max(self):
@@ -78,7 +82,8 @@ class Player(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        return self.mem.read_xor_value(0x00F4C30C + 48)
+        mp_max_str = self.mem.read_string(0x00CB7905,4)
+        return int(mp_max_str)
 
     @property
     def value_recovery(self):

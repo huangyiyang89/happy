@@ -10,15 +10,16 @@ class Script(happy.script.Script):
         happy (_type_): _description_
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self,cg) -> None:
+        super().__init__(cg)
         self.name = "高速移动"
-        self.speed = 120
+        self.speed = 140
 
 
-    def on_not_battle(self, cg):
+    def on_not_battle(self, cg:happy.Cg):
         cg.mem.write_int(0x00F4C460,self.speed)
-
+                # 验证码
+        cg.solve_if_captch()
     
-    def on_update(self, cg):
-        return super().on_update(cg)
+    def on_stop(self, cg:happy.Cg):
+        cg.mem.write_int(0x00F4C460,100)

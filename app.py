@@ -7,11 +7,10 @@ import logging
 import customtkinter
 import happy.core
 import happy.script
-from happy.util import timer
 
 logging.basicConfig(
     filename="unhappy.log",
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     encoding="UTF-8",
 )
