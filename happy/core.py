@@ -570,9 +570,8 @@ class Cg(Service):
             enable (bool, optional): _description_. Defaults to True.
         """
         # 00458C40 函数开头
-        # 00458EF7  89 35 44 76 92 00 改 BE 01 00 00 00 90
-        #                                写入几线
-        # 00458E1B  E8 80 F0 FF FF 改 B8 D3 00 00 00 过跳转
+                                                      # 写入几线
+        # 00458E1A  E8 80 F0 FF FF 改 B8 D3 00 00 00 BE 03 00 00 00 90 过跳转
 
         # 处理重连失败弹窗
         # 00458CB9 39 35 54 29 F6 00 0F 85 69 02 00 00 改C7 05 54 29 F6 00 01 00 00 00 90 90
@@ -580,14 +579,10 @@ class Cg(Service):
         if enable:
             line = self.mem.read_int(0x00927644)
             line_str = str(line).zfill(2)
-            self.mem.write_bytes(
-                0x00458EF7, bytes.fromhex(f"BE {line_str} 00 00 00 90"), 6
-            )
-            self.mem.write_bytes(0x00458E1B, bytes.fromhex("B8 D3 00 00 00"), 5)
+            self.mem.write_bytes(0x00458E1A, bytes.fromhex(f"B8 D3 00 00 00 BE {line_str} 00 00 00 90"), 11)
             # self.mem.write_bytes(0x00458CB9,bytes.fromhex("C7 05 54 29 F6 00 01 00 00 00 90 90"),12)
         else:
-            self.mem.write_bytes(0x00458EF7, bytes.fromhex("89 35 44 76 92 00"), 6)
-            self.mem.write_bytes(0x00458E1B, bytes.fromhex("E8 80 F0 FF FF"), 5)
+            self.mem.write_bytes(0x00458E1A, bytes.fromhex("55 E8 80 F0 FF FF 83 C4 04 A8 40"), 11)
             # self.mem.write_bytes(0x00458CB9,bytes.fromhex("39 35 54 29 F6 00 0F 85 69 02 00 00"),12)
 
     def retry_if_login_failed(self):

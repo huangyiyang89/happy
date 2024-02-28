@@ -236,6 +236,7 @@ class Script(happy.Script):
             return
         if cg.map.name in "銳健武器店":
             if (cg.map.x,cg.map.y)==(18,13):
+                cg.right_click("C")
                 cg.buy_bow()
             else:
                 cg.go_to(18,13)
@@ -256,6 +257,7 @@ class Script(happy.Script):
             return
         if cg.map.name in "命運小屋":
             if (cg.map.x,cg.map.y)==(15,22):
+                cg.right_click("C")
                 cg.buy_crystal()
             else:
                 cg.go_to(15,22)
@@ -292,9 +294,6 @@ class Script(happy.Script):
         Args:
             cg (_type_): _description_
         """
-
-        
-
         # 仍东西
         cg.drop_item("卡片", "魔石(18G)")
 
