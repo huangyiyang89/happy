@@ -17,6 +17,7 @@ class Script(happy.Script):
         self.name = "里洞魔石"
         self.start_time = time.time
         self.sell_record = []
+        self.move_record = []
 
     def on_start(self, cg: happy.Cg):
         """_summary_
@@ -28,6 +29,7 @@ class Script(happy.Script):
             _type_: _description_
         """
         self.sell_record = []
+        self.move_record = [(0,0,0),(1,1,1),(2,2,2)]
         cg.set_auto_ret_blackscreen()
         cg.set_auto_login()
         cg.set_auto_select_charater()
@@ -99,10 +101,11 @@ class Script(happy.Script):
             cg.tp()
         # 德威特岛
         if cg.map.id == 30001:
-            cg.go_if(211, 344, 156, 339, 159, 343)
-            cg.go_if(159, 346, 153, 315)
+            cg.go_if(211, 344, 156, 339, 156, 341)
+            cg.go_if(157, 342, 153, 315)
             cg.go_if(153, 315, 122, 306)
-            cg.go_if(122, 306, 129, 295)
+            cg.go_if(120, 307, 129, 295)
+            cg.go_if(129, 295, 128, 295)
             return
 
         # 里洞（外）
@@ -238,6 +241,7 @@ class Script(happy.Script):
             if (cg.map.x,cg.map.y)==(18,13):
                 cg.right_click("C")
                 cg.buy_bow()
+                time.sleep(1)
             else:
                 cg.go_to(18,13)
             return
@@ -259,6 +263,7 @@ class Script(happy.Script):
             if (cg.map.x,cg.map.y)==(15,22):
                 cg.right_click("C")
                 cg.buy_crystal()
+                time.sleep(1)
             else:
                 cg.go_to(15,22)
             return
@@ -282,11 +287,14 @@ class Script(happy.Script):
                 self.sell_record.append((cg.items.gold, time.time()))
                 logging.info("%s 出售魔石,当前魔币:%s",cg.account,cg.items.gold)
 
-            # 疑似挂机停止
-            if time.time()-self.sell_record[-1][1] >=2000:
-                logging.warning("%s 挂机异常,脚本停止,请检查.",cg.account)
-                send_wechat_notification(f"{cg.account} {cg.player.name} 挂机异常,脚本停止,请检查.")
-                self.stop()
+        
+        if time.time()-self.move_record[2][2] >= 100:
+            self.move_record.append((cg.map.x,cg.map.y,time.time()))
+            self.move_record.pop(0)
+        if self.move_record[0][:2] == self.move_record[1][:2] == self.move_record[2][:2]:
+            logging.warning("%s 挂机异常,停止脚本,请检查.",cg.account)
+            send_wechat_notification(f"{cg.account} {cg.player.name} 挂机异常,脚本停止,请检查.")
+            self.stop()
 
     def on_not_battle(self, cg: happy.Cg):
         """_summary_
@@ -313,6 +321,6 @@ class Script(happy.Script):
                         * 3600
                     )
                 )
-                + "/h"
+                + "/h 当前:"+str(self.sell_record[-1][0])
             )
         return "N/A"
