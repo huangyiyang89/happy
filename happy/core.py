@@ -89,7 +89,7 @@ class Cg(Service):
                 logging.warning(e)
                 print(e)
                 if self.process_is_closed():
-                    logging.warning("%s 游戏进程已关闭，释放对象。",self.account)
+                    logging.warning("%s 游戏进程已关闭，释放对象。", self.account)
                     self.close()
 
     def start_loop(self):
@@ -298,7 +298,10 @@ class Cg(Service):
         if first_food.name == "麵包":
             re_mp = 100
 
-        if self._eat_food_flag in (0, 1) and self.player.mp_max - self.player.mp >= re_mp:
+        if (
+            self._eat_food_flag in (0, 1)
+            and self.player.mp_max - self.player.mp >= re_mp
+        ):
             self.use_item(first_food)
             self.select_target()
             self._decode_send(
@@ -323,6 +326,7 @@ class Cg(Service):
 
     def eat_drug(self, lose_hp=400, excepts=""):
         """对玩家使用物品栏中第一个类型为药的物品"""
+        
         if self.player.hp_max - self.player.hp >= lose_hp:
             first_drug = next(
                 (drug for drug in self.items.drugs if drug.name not in excepts), None
@@ -432,11 +436,12 @@ class Cg(Service):
         # yJ 9 w 5V 2Me 4 西医资深补血
         # yJ 9 u 5l 2LW 4 西医普通补血
         dialog_type = self.get_dialog_type()
-        if dialog_type == 2:
+        npc_id = self.get_npc_id()
+        if dialog_type == 2 and npc_id > 0:
             npc_type = self.get_npc_type()
-            npc_id = self.get_npc_id()
             x62 = self.map.x_62
             y62 = self.map.y_62
+
             npc_id_62 = b62(npc_id)
 
             if npc_type == 328:
@@ -501,6 +506,8 @@ class Cg(Service):
     def solve_if_captch(self):
         """_summary_"""
         code = self.mem.read_string(0x00C32D4E, 10)
+        context = self.mem.read_string(0x00C32D40, 50)
+        logging.info(context)
         if code != "" and code.isdigit() and len(code) == 10:
             success = solve_captcha(self.account, code)
             if success:
@@ -570,7 +577,7 @@ class Cg(Service):
             enable (bool, optional): _description_. Defaults to True.
         """
         # 00458C40 函数开头
-                                                      # 写入几线
+        # 写入几线
         # 00458E1A  E8 80 F0 FF FF 改 B8 D3 00 00 00 BE 03 00 00 00 90 过跳转
 
         # 处理重连失败弹窗
@@ -579,10 +586,16 @@ class Cg(Service):
         if enable:
             line = self.mem.read_int(0x00927644)
             line_str = str(line).zfill(2)
-            self.mem.write_bytes(0x00458E1A, bytes.fromhex(f"B8 D3 00 00 00 BE {line_str} 00 00 00 90"), 11)
+            self.mem.write_bytes(
+                0x00458E1A,
+                bytes.fromhex(f"B8 D3 00 00 00 BE {line_str} 00 00 00 90"),
+                11,
+            )
             # self.mem.write_bytes(0x00458CB9,bytes.fromhex("C7 05 54 29 F6 00 01 00 00 00 90 90"),12)
         else:
-            self.mem.write_bytes(0x00458E1A, bytes.fromhex("55 E8 80 F0 FF FF 83 C4 04 A8 40"), 11)
+            self.mem.write_bytes(
+                0x00458E1A, bytes.fromhex("55 E8 80 F0 FF FF 83 C4 04 A8 40"), 11
+            )
             # self.mem.write_bytes(0x00458CB9,bytes.fromhex("39 35 54 29 F6 00 0F 85 69 02 00 00"),12)
 
     def retry_if_login_failed(self):
@@ -591,7 +604,7 @@ class Cg(Service):
         if self.state == 2:
             state = self.mem.read_int(0x00F62954)
             if not state in (1, 3):
-                logging.warning("%s 正在重连",self.account)
+                logging.warning("%s 正在重连", self.account)
                 self.mem.write_int(0x00F62954, 1)
                 time.sleep(3)
 
@@ -651,22 +664,19 @@ class Cg(Service):
         return self.mem.read_int(0x00F62954)
 
     def cure(self):
-        """亞諾曼治療
-        """
+        """亞諾曼治療"""
         npc_id = self.get_npc_id()
         self._decode_send(f"xD 9 7 5q {b62(npc_id)} 0 7")
-        logging.warning("%s 正在治疗",self.account)
+        logging.warning("%s 正在治疗", self.account)
 
     def buy_crystal(self):
-        """亞諾曼買水晶
-        """
+        """亞諾曼買水晶"""
         npc_id = self.get_npc_id()
-        self._decode_send(f"xD f m 5p {b62(npc_id)} 0 9"+r"\\z1")
-        logging.warning("%s 购买水晶",self.account)
+        self._decode_send(f"xD f m 5p {b62(npc_id)} 0 9" + r"\\z1")
+        logging.warning("%s 购买水晶", self.account)
 
     def buy_bow(self):
-        """亞諾曼買弓
-        """
+        """亞諾曼買弓"""
         npc_id = self.get_npc_id()
-        self._decode_send(f"xD i d 5p {b62(npc_id)} 0 3"+r"\\z1")
-        logging.warning("%s 购买弓",self.account)
+        self._decode_send(f"xD i d 5p {b62(npc_id)} 0 3" + r"\\z1")
+        logging.warning("%s 购买弓", self.account)

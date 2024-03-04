@@ -201,7 +201,6 @@ def get_scripts_directory(directory="scripts\\"):
 
 
 app = App()
-app.iconbitmap("256.ico")
 app.mainloop()
 
 for frame in app.cgframes:

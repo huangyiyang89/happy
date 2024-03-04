@@ -142,7 +142,7 @@ def solve_captcha(account,code) -> bool:
         print("data-sitekey:", matches[0])
         sitekey = matches[0]
     else:
-        logging.error("not match data-sitekey")
+        logging.error("not match data-sitekey,%s",url)
         return True
 
     matches = re.findall(r'updateseccode\(\'([^"]+)\',', main_page_text)

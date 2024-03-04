@@ -106,10 +106,12 @@ class Strategy:
         if target is None:
             return
 
-        if cg.player.hp_per < 60:
-            drug = next(cg.items.drugs, None)
-            if drug:
-                cg.player.use_battle_item(drug, cg.player)
+        if cg.player.hp_per < 80:
+            drug = cg.items.first_drug
+            if drug :
+                recovery = drug.is_drug * cg.player.value_recovery / 100
+                if cg.player.hp_lost>=recovery:
+                    cg.player.use_battle_item(drug, cg.player)
                 return
 
         if (

@@ -132,7 +132,26 @@ class Item:
         Returns:
             _type_: _description_
         """
-        return self.type == 43
+
+        if self.type ==43:
+            left_index = self.name.find("(")
+            if left_index == -1:
+                return 1  # 如果找不到左括号，返回 1
+
+            right_index = self.name.find(")", left_index)
+            if right_index == -1:
+                return 1  # 如果找不到右括号，返回 1
+
+            # 提取括号内的数字字符串
+            number_str = self.name[left_index + 1:right_index]
+
+            # 尝试将字符串转换为整数，如果转换失败则返回 1
+            try:
+                return int(number_str)
+            except ValueError:
+                return 1
+        else:
+            return 0
 
     @property
     def is_food_box(self):
@@ -265,6 +284,14 @@ class ItemCollection(happy.service.Service):
         """_summary_"""
         for item in self._items:
             if item.is_food:
+                return item
+        return None
+
+    @property
+    def first_drug(self) -> Item | None:
+        """_summary_"""
+        for item in self._items:
+            if item.is_drug:
                 return item
         return None
 

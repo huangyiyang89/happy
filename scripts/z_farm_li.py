@@ -1,9 +1,10 @@
 "script"
 import time
 import random
+import logging
 import happy
 from happy.util import send_wechat_notification
-import logging
+
 
 class Script(happy.Script):
     """_summary_
@@ -29,7 +30,7 @@ class Script(happy.Script):
             _type_: _description_
         """
         self.sell_record = []
-        self.move_record = [(0,0,0),(1,1,1),(2,2,2)]
+        self.move_record = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
         cg.set_auto_ret_blackscreen()
         cg.set_auto_login()
         cg.set_auto_select_charater()
@@ -54,7 +55,7 @@ class Script(happy.Script):
             self.go_to_heal(cg)
             return
 
-       # 武器损坏装备背包内武器
+        # 武器损坏装备背包内武器
         if not cg.items[2].valid:
             bow = cg.items.find(item_name="弓")
             if bow:
@@ -63,7 +64,7 @@ class Script(happy.Script):
                 self.go_to_buy_bow(cg)
             return
 
-        #水晶損壞
+        # 水晶損壞
         if not cg.items[7].valid:
             crystal = cg.items.find(item_name="地水的水晶")
             if crystal:
@@ -233,17 +234,17 @@ class Script(happy.Script):
         """
         print("去買弓")
         if cg.map.name in "亞諾曼城":
-            cg.go_if(120,139,93,138)
-            cg.go_if(93,138,93,123)
-            cg.go_if(93,123,100,114)
+            cg.go_if(120, 139, 93, 138)
+            cg.go_if(93, 138, 93, 123)
+            cg.go_if(93, 123, 100, 114)
             return
         if cg.map.name in "銳健武器店":
-            if (cg.map.x,cg.map.y)==(18,13):
+            if (cg.map.x, cg.map.y) == (18, 13):
                 cg.right_click("C")
                 cg.buy_bow()
                 time.sleep(1)
             else:
-                cg.go_to(18,13)
+                cg.go_to(18, 13)
             return
         cg.tp()
 
@@ -255,20 +256,19 @@ class Script(happy.Script):
         """
         print("去買水晶")
         if cg.map.name in "亞諾曼城":
-            cg.go_if(120,139,93,138)
-            cg.go_if(93,138,93,128)
-            cg.go_if(93,128,97,128)
+            cg.go_if(120, 139, 93, 138)
+            cg.go_if(93, 138, 93, 128)
+            cg.go_if(93, 128, 97, 128)
             return
         if cg.map.name in "命運小屋":
-            if (cg.map.x,cg.map.y)==(15,22):
+            if (cg.map.x, cg.map.y) == (15, 22):
                 cg.right_click("C")
                 cg.buy_crystal()
                 time.sleep(1)
             else:
-                cg.go_to(15,22)
+                cg.go_to(15, 22)
             return
         cg.tp()
-
 
     def on_update(self, cg: happy.Cg):
 
@@ -285,16 +285,29 @@ class Script(happy.Script):
         else:
             if cg.items.gold > self.sell_record[-1][0]:
                 self.sell_record.append((cg.items.gold, time.time()))
-                logging.info("%s 出售魔石,当前魔币:%s",cg.account,cg.items.gold)
+                logging.info("%s 出售魔石,当前魔币:%s", cg.account, cg.items.gold)
 
-        
-        if time.time()-self.move_record[2][2] >= 100:
-            self.move_record.append((cg.map.x,cg.map.y,time.time()))
+        if time.time() - self.move_record[2][2] >= 100:
+            self.move_record.append((cg.map.x, cg.map.y, time.time()))
             self.move_record.pop(0)
-        if self.move_record[0][:2] == self.move_record[1][:2] == self.move_record[2][:2]:
-            logging.warning("%s 挂机异常,停止脚本,请检查.",cg.account)
-            send_wechat_notification(f"{cg.account} {cg.player.name} 挂机异常,脚本停止,请检查.")
-            self.stop()
+        if (
+            self.move_record[0][:2]
+            == self.move_record[1][:2]
+            == self.move_record[2][:2]
+        ):
+            if cg.is_disconnected:
+                logging.warning("%s 已掉线,尝试重连.", cg.account)
+                send_wechat_notification(
+                    f"{cg.account} {cg.player.name} 已掉线,尝试重连."
+                )
+                self.move_record = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
+            else:
+                cg.tp()
+                logging.warning("%s 角色疑似卡死,TP.", cg.account)
+                send_wechat_notification(
+                    f"{cg.account} {cg.player.name} 角色疑似卡死,TP."
+                )
+                self.move_record = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
 
     def on_not_battle(self, cg: happy.Cg):
         """_summary_
@@ -321,6 +334,7 @@ class Script(happy.Script):
                         * 3600
                     )
                 )
-                + "/h 当前:"+str(self.sell_record[-1][0])
+                + "/h 当前:"
+                + str(self.sell_record[-1][0])
             )
         return "N/A"

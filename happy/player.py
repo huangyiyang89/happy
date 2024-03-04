@@ -43,6 +43,15 @@ class Player(happy.service.Service):
         return int(hp_max_str)
 
     @property
+    def hp_lost(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.hp_max - self.hp
+
+    @property
     def hp_per(self):
         """_summary_
 
@@ -74,6 +83,14 @@ class Player(happy.service.Service):
         mp_str = self.mem.read_string(0x00CB7900,4)
         return int(mp_str)
         
+    @property
+    def mp_lost(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.mp_max - self.mp
 
     @property
     def mp_max(self):
