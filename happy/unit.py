@@ -141,6 +141,8 @@ class UnitCollection(Service):
 
     def get_lowest_hp_per_friend(self):
         """_summary_"""
+        if len(self.friends) == 0 :
+            return None
         return min(self.friends, key=lambda unit: unit.hp_per)
 
     def get_cross_heal_unit(self, hp_lower_than_per=75):

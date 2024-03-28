@@ -8,7 +8,7 @@
             "name": "Launch",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}\\app.py",
+            "program": "${workspaceFolder}\\test32.py",
             "console": "integratedTerminal",
             "justMyCode": true
         },

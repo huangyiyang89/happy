@@ -154,7 +154,7 @@ class Script(happy.Script):
         Args:
             cg (happy.Cg): _description_
         """
-        print("去醫院")
+        print(cg.player.name+":"+self.efficiency)
         if cg.map.name in "亞諾曼城":
             if cg.map.x < 122 and cg.map.x > 114 and cg.map.y < 141 and cg.map.y > 133:
                 cg.go_to(116, 134)
@@ -163,6 +163,7 @@ class Script(happy.Script):
             return
         if cg.map.name in "中央醫院":
             return
+        
         cg.tp()
 
     def go_to_heal(self, cg: happy.Cg):
@@ -316,7 +317,7 @@ class Script(happy.Script):
             cg (_type_): _description_
         """
         # 仍东西
-        cg.drop_item("卡片", "魔石(18G)")
+        #cg.drop_item("卡片", "魔石(18G)")
 
     @property
     def efficiency(self):

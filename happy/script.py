@@ -36,6 +36,13 @@ class Script:
         """
         return self.state > 0
 
+    @enable.setter
+    def enable(self,value):
+        if value:
+            self.start()
+        else:
+            self.stop()
+
     def start(self):
         """设置state = 1 等待开始"""
         if self.state in (0,3):

@@ -134,13 +134,13 @@ class Item:
         """
 
         if self.type ==43:
-            left_index = self.name.find("(")
+            left_index = self.name.find("（")
             if left_index == -1:
-                return 1  # 如果找不到左括号，返回 1
+                return 200  # 如果找不到左括号，返回 1
 
-            right_index = self.name.find(")", left_index)
+            right_index = self.name.find("）", left_index)
             if right_index == -1:
-                return 1  # 如果找不到右括号，返回 1
+                return 200  # 如果找不到右括号，返回 1
 
             # 提取括号内的数字字符串
             number_str = self.name[left_index + 1:right_index]

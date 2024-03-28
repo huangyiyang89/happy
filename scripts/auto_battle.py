@@ -18,13 +18,13 @@ class Script(happy.Script):
         self.enable_use_potion = False
         self.force_use_first_skill = False
 
-    def on_start(self, cg: happy.Cg):
+    def on_start(self, cg: Cg):
         cg.disable_shell()
 
-    def on_stop(self, cg: happy.Cg):
+    def on_stop(self, cg: Cg):
         cg.disable_shell(False)
 
-    def on_update(self, cg: happy.Cg):
+    def on_update(self, cg: Cg):
         """_summary_
 
         Args:
@@ -32,16 +32,17 @@ class Script(happy.Script):
         """
         # cg.send_wechat_notification()
 
-    def on_battle(self, cg: happy.Cg):
+    def on_battle(self, cg: Cg):
         """_summary_
 
         Args:
             cg (happy.core.Cg): _description_
         """
+        
         if self.strategy is None or self.strategy.job_name != cg.player.job_name:
             self.strategy = Strategy.get_strategy(cg)
 
-    def on_player_turn(self, cg: happy.Cg):
+    def on_player_turn(self, cg: Cg):
         """_summary_
 
         Args:
@@ -58,7 +59,7 @@ class Script(happy.Script):
             else:
                 self.strategy.player_action(cg)
 
-    def on_pet_turn(self, cg: happy.Cg):
+    def on_pet_turn(self, cg: Cg):
         """_summary_
 
         Args:
@@ -66,7 +67,7 @@ class Script(happy.Script):
         """
         self.strategy.pet_action(cg)
 
-    def on_not_battle(self, cg: happy.Cg):
+    def on_not_battle(self, cg: Cg):
         cg.eat_food()
         cg.call_nurse()
         cg.solve_if_captch()
@@ -75,11 +76,11 @@ class Script(happy.Script):
 class Strategy:
     """_summary_"""
 
-    def __init__(self, cg: happy.Cg) -> None:
+    def __init__(self, cg: Cg) -> None:
         self.job_name = cg.player.job_name
 
     @staticmethod
-    def get_strategy(cg: happy.Cg):
+    def get_strategy(cg: Cg):
         """_summary_
 
         Args:
@@ -93,7 +94,7 @@ class Strategy:
             return ChuanJiao(cg)
         return Strategy(cg)
 
-    def player_action(self, cg: happy.Cg):
+    def player_action(self, cg: Cg):
         """_summary_
 
         Args:
@@ -112,7 +113,7 @@ class Strategy:
                 recovery = drug.is_drug * cg.player.value_recovery / 100
                 if cg.player.hp_lost>=recovery:
                     cg.player.use_battle_item(drug, cg.player)
-                return
+                    return
 
         if (
             enemies_count > 2
@@ -125,7 +126,7 @@ class Strategy:
         else:
             cg.player.attack(target)
 
-    def pet_action(self, cg: happy.Cg):
+    def pet_action(self, cg: Cg):
         """_summary_
 
         Args:
@@ -183,31 +184,35 @@ class ChuanJiao(Strategy):
         Strategy (_type_): _description_
     """
 
-    def player_action(self, cg: happy.Cg):
+    def player_action(self, cg: Cg):
         low_hp_friends_count = sum(
             1 for friend in cg.battle.units.friends if friend.hp_per <= 75
         )
-        cross_heal_unit = cg.battle.units.get_cross_heal_unit(65)
+        cross_heal_unit = cg.battle.units.get_cross_heal_unit(80)
         lowest_friend = cg.battle.units.get_lowest_hp_per_friend()
-        if low_hp_friends_count > 4:
-            skill = cg.player.skills.get_skill("超強補血魔法")
-            if skill is not None and cg.player.mp > skill.max_level_cost:
-                cg.player.cast(skill, cg.player)
-                return
-        elif cross_heal_unit is not None:
-            skill = cg.player.skills.get_skill("強力補血魔法")
-            if skill is not None and cg.player.mp > skill.max_level_cost:
-                cg.player.cast(skill, cross_heal_unit)
-                return
-        elif lowest_friend.hp_per <= 50:
-            skill = cg.player.skills.get_skill("補血魔法")
-            if skill is not None and cg.player.mp > skill.max_level_cost:
-                cg.player.cast(skill, lowest_friend)
-                return
+        ultra = cg.player.skills.get_skill("超強補血魔法")
+        cross = cg.player.skills.get_skill("強力補血魔法")
+        single = cg.player.skills.get_skill("補血魔法")
+        spirit = cg.player.skills.get_skill("精神衝擊波")
+        if low_hp_friends_count > 4 and ultra is not None and cg.player.mp > ultra.max_level_cost:
+            cg.player.cast(ultra, cg.player)
+            return
+        if cross_heal_unit is not None and cross is not None and cg.player.mp > cross.max_level_cost:
+            cg.player.cast(cross, cross_heal_unit)
+            return
+        if lowest_friend is not None and lowest_friend.hp_per <= 80 and single is not None and cg.player.mp > single.max_level_cost:
+            cg.player.cast(single, lowest_friend)
+            return
 
         target = cg.battle.units.get_random_enemy()
         if target is None:
             return
+        
+        if spirit is not None and spirit.pos == 1:
+            target = cg.battle.units.get_line_unit()
+            cg.player.cast(spirit,target)
+            return
+        
         cg.player.attack(cg.battle.units.get_random_enemy())
 
 

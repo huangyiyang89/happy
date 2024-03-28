@@ -18,6 +18,19 @@ class Battle(happy.service.Service):
         self.units.update()
 
     @property
+    def is_ready(self)->bool:
+        """等待服务器返回
+
+        Returns:
+            bool: _description_
+        """
+        a = self.mem.read_int(0x005988AC)
+        b = self.mem.read_int(0x00598940)
+        if a==b:
+            return True
+        return False
+
+    @property
     def is_fighting(self) -> bool:
         """state == 10
 

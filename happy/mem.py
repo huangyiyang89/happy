@@ -13,12 +13,16 @@ class CgMem(pymem.Pymem):
     """
 
     def read_string(self, address, byte=50, encoding="big5", end=b"\x00"):
-        buff = self.read_bytes(address, byte)
-        i = buff.find(end)
-        if i != -1:
-            buff = buff[:i]
-        buff = buff.decode(encoding, "replace")
-        return buff
+        try:
+            buff = self.read_bytes(address, byte)
+            i = buff.find(end)
+            if i != -1:
+                buff = buff[:i]
+            buff = buff.decode(encoding, "replace")
+            return buff
+        except Exception as e:  # pylint: disable=broad-except
+            print(e)
+            return ""
 
     @staticmethod
     def list_cg_processes(process_name=b"bluecg.exe"):

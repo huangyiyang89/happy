@@ -23,10 +23,18 @@ class Script(happy.Script):
             cg (happy.core.Cg): _description_
         """
 
+        if cg.map.x == 135 and cg.map.y == 175:
+            cg.go_to(135,174)
+            return
+        if cg.map.x == 135 and cg.map.y == 174:
+            cg.go_to(135,175)
+            return
+
         if self.start_x == 0 and self.start_y == 0:
             self.start_x = cg.map.x
             self.start_y = cg.map.y
 
+        
         cg.go_to(
             self.start_x + random.randrange(-self.range, self.range+1),
             self.start_y + random.randrange(-self.range, self.range+1),

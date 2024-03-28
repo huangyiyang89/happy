@@ -3,6 +3,7 @@
 from functools import wraps
 import time
 import random
+from io import BytesIO
 import re
 import logging
 import requests
@@ -125,13 +126,16 @@ def timer(func):
     return wrapper
 
 
-def solve_captcha(account,code) -> bool:
+def solve_captcha(account, code,v2=False) -> bool:
     """_summary_
 
     Args:
         url (_type_): _description_
     """
+    
     url = f"https://www.bluecg.net/plugin.php?id=gift:v3v&ac={account}&time={code}"
+    if v2:
+        url = f"https://www.bluecg.net/plugin.php?id=gift:v2v&ac={account}&time={code}"
     scraper = cloudscraper.create_scraper()
     scraper.headers["Cache-Control"] = "no-cache"
 
@@ -142,7 +146,7 @@ def solve_captcha(account,code) -> bool:
         print("data-sitekey:", matches[0])
         sitekey = matches[0]
     else:
-        logging.error("not match data-sitekey,%s",url)
+        logging.error("not match data-sitekey,%s", url)
         return True
 
     matches = re.findall(r'updateseccode\(\'([^"]+)\',', main_page_text)
@@ -175,23 +179,20 @@ def solve_captcha(account,code) -> bool:
     scraper.headers["Referer"] = url
     for i in range(5):
         captcha_response = scraper.get(captcha_url)
-        captcha_image_buffer = captcha_response.content
-        with open(account+".gif", "wb") as f:
-            f.write(captcha_image_buffer)
-        img = Image.open(account+".gif")
+        captcha_image_buffer = BytesIO(captcha_response.content)
+        img = Image.open(captcha_image_buffer)
         max_duration = 0
+        image_bytes_buffer = BytesIO()
         for frame in ImageSequence.Iterator(img):
             duration = frame.info["duration"]
             if duration > max_duration:
-                frame.save(account+".png")
+                image_bytes_buffer.seek(0)
+                image_bytes_buffer.truncate()
+                frame.save(image_bytes_buffer, format="PNG")
                 max_duration = duration
-
         # recognize captcha image
         dddocr = DdddOcr()
-        with open(account+".png", "rb") as f:
-            image_bytes = f.read()
-            verifycode = dddocr.classification(image_bytes)
-
+        verifycode = dddocr.classification(image_bytes_buffer)
         checked_res = scraper.get(
             f"https://www.bluecg.net/misc.php?mod=seccode&action=check&inajax=1&modid=plugin::gift&secverify={verifycode}"
         ).text
@@ -202,7 +203,7 @@ def solve_captcha(account,code) -> bool:
         if i == 4:
             logging.error("验证码5次未能识别")
             return False
-    #post verify
+    # post verify
     data = {
         "g-recaptcha-response": g_recaptcha_response,
         "seccodehash": sid,

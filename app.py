@@ -1,5 +1,4 @@
 """app"""
-
 import os
 import sys
 import glob
@@ -22,7 +21,7 @@ class App(customtkinter.CTk):
     Args:
         customtkinter (_type_): _description_
     """
-    
+
     def on_button_click(self):
         """_summary_"""
         happy.Cg.close_handles()
@@ -30,24 +29,20 @@ class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         self.title("HappyCG")
-        self.geometry("1400x600")
-        self.grid_columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
-        self.grid_rowconfigure(0, weight=0, pad=20)
-        self.grid_rowconfigure(1, weight=1)
-
-        for i in range(6):
-            label = customtkinter.CTkLabel(self, text="", width=200, height=0)
-            label.grid(row=0, column=i, sticky="nsew")
-
+        self.geometry("1000x400")
+        top_frame = customtkinter.CTkFrame(self)
         button0 = customtkinter.CTkButton(
-            self, text="解除多开限制", command=self.on_button_click
+            top_frame, text="解除多开限制", command=self.on_button_click
         )
-        button0.grid(row=0, column=0, sticky="w")
-
+        button1 = customtkinter.CTkButton(
+            top_frame, text="解除多开限制2", command=self.on_button_click
+        )
+        top_frame.pack(side="top", padx=10, pady=5)
+        button0.pack(side="left", padx=10, pady=5)
+        button1.pack(side="left", padx=10, pady=5)
         self.cgframes: list[Cgframe] = []
         self.refresh()
-    
-    
+
     def refresh(self):
         """_summary_"""
 
@@ -57,12 +52,13 @@ class App(customtkinter.CTk):
             self.remove_destroyed_frames()
             new_frame = Cgframe(self, cg)
             self.cgframes.append(new_frame)
-            self.grid_all_frames()
+            # self.grid_all_frames()
+            new_frame.pack(side="left", padx=10, pady=5)
             self.refresh()
         else:
-            self.after(3000, self.refresh)
+            pass
+            #self.after(3000, self.refresh)
 
-    
     def remove_destroyed_frames(self):
         """_summary_"""
         count = len(self.cgframes)
@@ -70,7 +66,6 @@ class App(customtkinter.CTk):
             if not self.cgframes[i].winfo_exists():
                 self.cgframes.pop(i)
 
-    
     def grid_all_frames(self):
         """_summary_"""
         count = len(self.cgframes)
@@ -101,7 +96,6 @@ class Cgframe(customtkinter.CTkFrame):
     def __init__(self, master, cg: happy.core.Cg):
         super().__init__(master, width=200, height=200)
         self.cg = cg
-
         # lable control
         self.player_name_label = customtkinter.CTkLabel(self, text="")
         self.player_name_label.pack()
@@ -164,7 +158,7 @@ class Cgframe(customtkinter.CTkFrame):
         self.after(3000, self.update_ui)
 
     def switch_event(self, switch_var: customtkinter.BooleanVar, script: happy.Script):
-        """_summary_"""       
+        """_summary_"""
         if switch_var.get():
             script.start()
         else:

@@ -9,7 +9,7 @@ import importlib
 import importlib.util
 import sys
 import random
-from typing import Literal
+from typing import Literal,Callable
 import psutil
 import happy.unit
 import happy.player
@@ -42,6 +42,7 @@ class Cg(Service):
         self.is_closed = False
         self._last_update_time = 0
         self._eat_food_flag = 0
+        self.on_close:Callable = None
 
     @property
     def _tick_count(self):
@@ -84,12 +85,10 @@ class Cg(Service):
         while self._is_running:
             try:
                 self.update()
-                time.sleep(0.2)
+                time.sleep(0.1)
             except Exception as e:  # pylint: disable=broad-except
-                logging.warning(e)
                 print(e)
                 if self.process_is_closed():
-                    logging.warning("%s 游戏进程已关闭，释放对象。", self.account)
                     self.close()
 
     def start_loop(self):
@@ -106,6 +105,19 @@ class Cg(Service):
         if not self.is_closed:
             self.is_closed = True
             Cg.opened_cg_processes.remove(self.mem.process_id)
+        if self.on_close is not None:
+            self.on_close()
+
+
+
+    @property
+    def is_exist(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return not self.is_closed
 
     def update(self):
         """update all children and trigger events"""
@@ -326,7 +338,7 @@ class Cg(Service):
 
     def eat_drug(self, lose_hp=400, excepts=""):
         """对玩家使用物品栏中第一个类型为药的物品"""
-        
+
         if self.player.hp_max - self.player.hp >= lose_hp:
             first_drug = next(
                 (drug for drug in self.items.drugs if drug.name not in excepts), None
@@ -505,13 +517,23 @@ class Cg(Service):
 
     def solve_if_captch(self):
         """_summary_"""
+        version = self.mem.read_string(0x00C32CAC, 20)
+        isv2 = 'v2' in version
         code = self.mem.read_string(0x00C32D4E, 10)
         context = self.mem.read_string(0x00C32D40, 50)
-        logging.info(context)
         if code != "" and code.isdigit() and len(code) == 10:
-            success = solve_captcha(self.account, code)
+            success = solve_captcha(self.account, code, isv2)
             if success:
                 self.mem.write_string(0x00C32D4E, "\0\0\0\0\0\0\0\0\0\0")
+            else:
+                logging.info(
+                    "验证失败,账号:"
+                    + self.account
+                    + ",code:"
+                    + code
+                    + ",context:"
+                    + context
+                )
 
     def drop_item(self, *args):
         """仍物品，*args可为Item示例或物品名string
@@ -663,6 +685,15 @@ class Cg(Service):
         """
         return self.mem.read_int(0x00F62954)
 
+    @property
+    def move_speed(self):
+        """_summary_"""
+        self.mem.read_int(0x00F4C460)
+
+    @move_speed.setter
+    def move_speed(self, value):
+        self.mem.write_int(0x00F4C460, value)
+
     def cure(self):
         """亞諾曼治療"""
         npc_id = self.get_npc_id()
@@ -680,3 +711,9 @@ class Cg(Service):
         npc_id = self.get_npc_id()
         self._decode_send(f"xD i d 5p {b62(npc_id)} 0 3" + r"\\z1")
         logging.warning("%s 购买弓", self.account)
+
+    def laba(self):
+        """_summary_"""
+        # xJ r j 5g 5Qm 1
+        npc_id = self.get_npc_id()
+        self._decode_send(f"xD r j 5g {b62(npc_id)} 1")

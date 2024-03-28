@@ -1,5 +1,4 @@
 """ocr"""
-import io
 import os
 import sys
 import onnxruntime
@@ -8242,7 +8241,7 @@ class DdddOcr:
             _type_: _description_
         """
 
-        image = Image.open(io.BytesIO(img))
+        image = Image.open(img)
 
         image = image.resize(
             (int(image.size[0] * (64 / image.size[1])), 64),
