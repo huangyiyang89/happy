@@ -158,7 +158,7 @@ def solve_captcha(account, code,v2=False) -> bool:
         return True
 
     # solve recaptcha
-    capsolver.api_key = "CAP-0C304B4D66688AA0ABE2C8842DBFEAD3"
+    capsolver.api_key = "CAP-FCA78B957EF296BAFA30F4B3A5E85754"
     solution = capsolver.solve(
         {
             "type": "ReCaptchaV2TaskProxyLess",
