@@ -186,5 +186,6 @@ pyu-data/
 *.png
 *.jpg
 *.ico
-
+#key
+key.py
 # End of https://www.toptal.com/developers/gitignore/api/python

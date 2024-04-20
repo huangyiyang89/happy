@@ -97,6 +97,7 @@ class Map(happy.service.Service):
         if self.id != self.last_map_id:
             time.sleep(1)
             self.last_map_id = self.id
+            self.exits = []
 
 
     def read_data(self):

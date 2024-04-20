@@ -112,7 +112,12 @@ class Script(happy.Script):
 
         # 里洞（外）
         if cg.map.id == 32511:
-            if len(cg.map.exits) == 1:
+            if len(cg.map.exits) != 0:
+                if cg.map.x == cg.map.exits[0][0] and cg.map.y == cg.map.exits[0][1]:
+                    cg.go_astar(
+                        cg.map.x + random.randint(-1, 1),
+                        cg.map.y + random.randint(-1, 1),
+                    )
                 cg.go_astar(cg.map.exits[0][0], cg.map.exits[0][1])
             else:
                 cg.go_astar(24, 19)
@@ -125,6 +130,14 @@ class Script(happy.Script):
                 )
             else:
                 if cg.map.exits[-1][2] == 17955:
+                    if (
+                        cg.map.x == cg.map.exits[-1][0]
+                        and cg.map.y == cg.map.exits[-1][1]
+                    ):
+                        cg.go_astar(
+                            cg.map.x + random.randint(-1, 1),
+                            cg.map.y + random.randint(-1, 1),
+                        )
                     cg.go_astar(cg.map.exits[-1][0], cg.map.exits[-1][1])
                 else:
                     # 到达最后一层
@@ -142,7 +155,6 @@ class Script(happy.Script):
                 cg.go_to(13, 6)
             return
 
-        print("状态异常 TP")
         cg.tp()
         time.sleep(1)
 
@@ -170,7 +182,6 @@ class Script(happy.Script):
         Args:
             cg (happy.Cg): _description_
         """
-        print("去補血")
         if cg.map.name not in "中央醫院":
             self.go_to_hospital(cg)
             return
@@ -188,7 +199,6 @@ class Script(happy.Script):
         Args:
             cg (happy.Cg): _description_
         """
-        print("去賣魔石")
         if cg.map.name not in "亞諾曼城":
             cg.tp()
         # 亚诺曼
@@ -211,7 +221,6 @@ class Script(happy.Script):
         Args:
             cg (happy.Cg): _description_
         """
-        print("去治療")
         if cg.map.name not in "中央醫院":
             self.go_to_hospital(cg)
             return
@@ -231,7 +240,6 @@ class Script(happy.Script):
         Args:
             cg (happy.Cg): _description_
         """
-        print("去買弓")
         if cg.map.name in "亞諾曼城":
             cg.go_if(120, 139, 93, 138)
             cg.go_if(93, 138, 93, 123)
@@ -253,7 +261,6 @@ class Script(happy.Script):
         Args:
             cg (happy.Cg): _description_
         """
-        print("去買水晶")
         if cg.map.name in "亞諾曼城":
             cg.go_if(120, 139, 93, 138)
             cg.go_if(93, 138, 93, 128)
@@ -272,20 +279,13 @@ class Script(happy.Script):
     def on_update(self, cg: happy.Cg):
 
         cg.retry_if_login_failed()
-
-        if "地下" in cg.map.name:
+        #迷宫内或者洞外
+        if "地下" in cg.map.name or cg.map.id == 32511:
             if time.time() - self._last_update_time > 2:
                 cg.map.read_data()
                 self._last_update_time = time.time()
             if len(cg.map.exits) < 2:
                 cg.map.request_map_data()
-
-        # 洞外
-        if cg.map.id == 32511:
-            if time.time() - self._last_update_time > 2:
-                cg.map.read_data()
-                self._last_update_time = time.time()
-            cg.map.request_map_data()
 
         # 记录效率
         if len(self.sell_record) == 0:

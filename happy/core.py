@@ -119,12 +119,12 @@ class Cg(Service):
     def update(self):
         """update all children and trigger events"""
         self._last_update_time = time.time()
+        self.map.update()
         self.battle.update()
         self.player.update()
         self.pets.update()
         self.items.update()
-        self.map.update()
-
+        
         for script in self._scripts:
             if script.enable:
                 if script.state == 1:
@@ -218,10 +218,6 @@ class Cg(Service):
         if path and len(path) > 1:
             path = merge_path(path)
             self.go_to(*path[1])
-        else:
-            self.go_to(x + random.randint(-2, 2), y + random.randint(-2, 2))
-            self.map.request_map_data()
-            self.map.read_data()
 
     def go_send_call(
         self,
@@ -584,9 +580,6 @@ class Cg(Service):
 
     def disable_shell(self, enable=True):
         """禁止游戏弹出网页"""
-        # for module in self.mem.list_modules():
-        #     if module.name == "shell32.dll":
-        #         print(module)
         pointer = self.mem.read_int(0x0053E220)
         if enable:
             self.mem.write_bytes(pointer, bytes.fromhex("C2 04 00"), 3)

@@ -13,6 +13,17 @@ class CgMem(pymem.Pymem):
     """
 
     def read_string(self, address, byte=50, encoding="big5", end=b"\x00"):
+        """_summary_
+
+        Args:
+            address (_type_): _description_
+            byte (int, optional): _description_. Defaults to 50.
+            encoding (str, optional): _description_. Defaults to "big5".
+            end (bytes, optional): _description_. Defaults to b"\x00".
+
+        Returns:
+            _type_: _description_
+        """
         try:
             buff = self.read_bytes(address, byte)
             i = buff.find(end)

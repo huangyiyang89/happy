@@ -12,7 +12,7 @@ import capsolver
 from PIL import Image
 from PIL import ImageSequence
 from happy.ocr import classification
-
+from happy.key import key
 
 def merge_path(path):
     """_summary_
@@ -156,7 +156,7 @@ def solve_captcha(account, code, v2=False) -> bool:
         return True
 
     # solve recaptcha
-    capsolver.api_key = "CAP-FCA78B957EF296BAFA30F4B3A5E85754"
+    capsolver.api_key = key
     solution = capsolver.solve(
         {
             "type": "ReCaptchaV2TaskProxyLess",
@@ -209,7 +209,6 @@ def solve_captcha(account, code, v2=False) -> bool:
     }
 
     res = scraper.post(url, data=data)
-    print(res.content)
     return True
 
 
