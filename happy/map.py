@@ -1,4 +1,5 @@
 """Map"""
+
 import struct
 import heapq
 import random
@@ -89,10 +90,15 @@ class Map(happy.service.Service):
         """
         path = self.mem.read_string(0x0018CCCC)
         if "map" not in path:
-            path = self.mem.read_string(0x0018CCCC-4)
+            path = self.mem.read_string(0x0018CCCC - 4)
         return self.mem.get_directory() + "\\" + path
 
-    
+    def update(self):
+        if self.id != self.last_map_id:
+            time.sleep(1)
+            self.last_map_id = self.id
+
+
     def read_data(self):
         """_summary_"""
         try:
@@ -143,7 +149,7 @@ class Map(happy.service.Service):
 
                         if flag == 49155:
                             self.exits.append((j, i, object_id))
-                            #print(f"找到场景转换坐标={j},{i},object_id={object_id}")
+                            # print(f"找到场景转换坐标={j},{i},object_id={object_id}")
 
                         # if object_id:
                         #     print(j,i,object_id)
@@ -165,7 +171,7 @@ class Map(happy.service.Service):
                 self.exits = sorted(self.exits, key=lambda x: x[2])
                 return True
         except FileNotFoundError:
-            #print("未能打开地图文件")
+            # print("未能打开地图文件")
             return False
 
     def paint_map(self):
@@ -184,7 +190,6 @@ class Map(happy.service.Service):
         Args:
             goal (_type_): _description_
         """
-
         def neighbors(node, grid):
             x, y, _ = node
             directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
@@ -227,37 +232,19 @@ class Map(happy.service.Service):
 
         return None
 
-    def update(self):
-        if self.id != self.last_map_id:
-            #self.read_data()
-            self.last_map_id = self.id
-            time.sleep(1)
-            #print(f"切换地图至 {self.name} {self.file_path}")
-            self.request_map_data()
-
-        # try:
-        #     # 获取文件的最后修改时间
-        #     mtime = os.path.getmtime(self.file_path)
-        #     if mtime > self.file_last_mtime:
-        #         print("map dat updated")
-        #         self.read_data()
-        #         self.file_last_mtime = mtime
-        # except FileNotFoundError:
-        #     print("dat文件未找到。")
-
     def request_map_data(self):
-        """_summary_
-        """
-        self.read_data()
+        """_summary_"""
         e1 = random.randint(0, self.width_east)
         e2 = random.randint(0, self.width_east)
         s1 = random.randint(0, self.height_south)
         s2 = random.randint(0, self.height_south)
         self._decode_send(
-                f"UUN 1 {b62(self.id)} {b62(e1)} {b62(s1)} {b62(e2)} {b62(s2)}"
-            )
+            f"UUN 1 {b62(self.id)} {b62(e1)} {b62(s1)} {b62(e2)} {b62(s2)}"
+        )
 
     def read_info_data(self):
+        """_summary_
+        """
         # GraphicInfo_66.bin 4100+
         # GraphicInfo_Joy_54 243021
         # GraphicInfo_Joy_CH1 91500
@@ -276,7 +263,7 @@ class Map(happy.service.Service):
         """
         except_exit_data = self.map_flag_data
         for _exit in self.exits:
-            except_exit_data[_exit[1]][_exit[0]]=0
+            except_exit_data[_exit[1]][_exit[0]] = 0
 
         if not except_exit_data:
             return []

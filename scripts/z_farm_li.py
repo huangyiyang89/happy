@@ -19,6 +19,7 @@ class Script(happy.Script):
         self.start_time = time.time
         self.sell_record = []
         self.move_record = []
+        self._last_update_time = 0
 
     def on_start(self, cg: happy.Cg):
         """_summary_
@@ -51,6 +52,10 @@ class Script(happy.Script):
         Args:
             cg (happy.core.Cg): _description_
         """
+        if cg.items.blanks_count == 0:
+            self.go_to_sell(cg)
+            return
+
         if cg.player.mp_per != 100 and cg.map.name in ("亞諾曼城", "中央醫院"):
             self.go_to_heal(cg)
             return
@@ -81,10 +86,6 @@ class Script(happy.Script):
             self.go_to_cure(cg)
             return
 
-        if cg.items.blanks_count == 0:
-            self.go_to_sell(cg)
-            return
-
         if cg.map.name in "亞諾曼城" and cg.items.blanks_count < 10:
             self.go_to_sell(cg)
             return
@@ -111,11 +112,9 @@ class Script(happy.Script):
 
         # 里洞（外）
         if cg.map.id == 32511:
-            if len(cg.map.exits) > 0:
+            if len(cg.map.exits) == 1:
                 cg.go_astar(cg.map.exits[0][0], cg.map.exits[0][1])
             else:
-                cg.go_if(24, 19, 24, 7)
-                cg.go_if(24, 7, 24, 19)
                 cg.go_astar(24, 19)
             return
 
@@ -126,7 +125,6 @@ class Script(happy.Script):
                 )
             else:
                 if cg.map.exits[-1][2] == 17955:
-                    # cg.map.map_flag_data[cg.map.exits[0][1]][cg.map.exits[0][0]]= 0 #上一層樓梯設置不可到達防止來回上下樓
                     cg.go_astar(cg.map.exits[-1][0], cg.map.exits[-1][1])
                 else:
                     # 到达最后一层
@@ -154,7 +152,7 @@ class Script(happy.Script):
         Args:
             cg (happy.Cg): _description_
         """
-        print(cg.player.name+":"+self.efficiency)
+        print(cg.player.name + ":" + self.efficiency)
         if cg.map.name in "亞諾曼城":
             if cg.map.x < 122 and cg.map.x > 114 and cg.map.y < 141 and cg.map.y > 133:
                 cg.go_to(116, 134)
@@ -163,7 +161,7 @@ class Script(happy.Script):
             return
         if cg.map.name in "中央醫院":
             return
-        
+
         cg.tp()
 
     def go_to_heal(self, cg: happy.Cg):
@@ -276,9 +274,18 @@ class Script(happy.Script):
         cg.retry_if_login_failed()
 
         if "地下" in cg.map.name:
-            cg.map.read_data()
+            if time.time() - self._last_update_time > 2:
+                cg.map.read_data()
+                self._last_update_time = time.time()
             if len(cg.map.exits) < 2:
                 cg.map.request_map_data()
+
+        # 洞外
+        if cg.map.id == 32511:
+            if time.time() - self._last_update_time > 2:
+                cg.map.read_data()
+                self._last_update_time = time.time()
+            cg.map.request_map_data()
 
         # 记录效率
         if len(self.sell_record) == 0:
@@ -317,7 +324,7 @@ class Script(happy.Script):
             cg (_type_): _description_
         """
         # 仍东西
-        #cg.drop_item("卡片", "魔石(18G)")
+        # cg.drop_item("卡片", "魔石(18G)")
 
     @property
     def efficiency(self):

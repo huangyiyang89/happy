@@ -30,3 +30,4 @@ class Script(happy.Script):
     def on_update(self, cg: happy.Cg):
         if len(cg.map.exits) < 2:
             cg.map.request_map_data()
+            cg.map.read_data()

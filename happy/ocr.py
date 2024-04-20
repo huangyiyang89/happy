@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """ocr"""
 import os
 import sys
@@ -5,19 +6,12 @@ import onnxruntime
 from PIL import Image
 import numpy as np
 
-class DdddOcr:
-    """_summary_
 
-    Args:
-        object (_type_): _description_
-    """
-
-    def __init__(self):
-        graph_path = os.path.join(os.path.dirname(sys.argv[0]), "common.onnx")
-        self.__ort_session = onnxruntime.InferenceSession(
-            graph_path, providers=["CPUExecutionProvider"]
+_graph_path = os.path.join(os.path.dirname(sys.argv[0]), "common.onnx")
+_ort_session = onnxruntime.InferenceSession(
+            _graph_path, providers=["CPUExecutionProvider"]
         )
-        self.__charset = [
+_charset = [
             "",
             "笤",
             "谴",
@@ -8230,40 +8224,40 @@ class DdddOcr:
             "荘",
         ]
 
-    def classification(self, img):
-        """_summary_
+def classification(img):
+    """_summary_
 
-        Args:
-            img (_type_): _description_
-            png_fix (bool, optional): _description_. Defaults to False.
+    Args:
+        img (_type_): _description_
+        png_fix (bool, optional): _description_. Defaults to False.
 
-        Returns:
-            _type_: _description_
-        """
+    Returns:
+        _type_: _description_
+    """
 
-        image = Image.open(img)
+    image = Image.open(img)
 
-        image = image.resize(
-            (int(image.size[0] * (64 / image.size[1])), 64),
-            Image.Resampling.LANCZOS,
-        ).convert("L")
+    image = image.resize(
+        (int(image.size[0] * (64 / image.size[1])), 64),
+        Image.Resampling.LANCZOS,
+    ).convert("L")
 
-        image = image.convert("L")
-        image = np.array(image).astype(np.float32)
-        image = np.expand_dims(image, axis=0) / 255.0
-        image = (image - 0.5) / 0.5
+    image = image.convert("L")
+    image = np.array(image).astype(np.float32)
+    image = np.expand_dims(image, axis=0) / 255.0
+    image = (image - 0.5) / 0.5
 
-        ort_inputs = {"input1": np.array([image]).astype(np.float32)}
-        ort_outs = self.__ort_session.run(None, ort_inputs)
-        result = []
+    ort_inputs = {"input1": np.array([image]).astype(np.float32)}
+    ort_outs = _ort_session.run(None, ort_inputs)
+    result = []
 
-        last_item = 0
+    last_item = 0
 
-        for item in ort_outs[0][0]:
-            if item == last_item:
-                continue
-            last_item = item
-            if item != 0:
-                result.append(self.__charset[item])
+    for item in ort_outs[0][0]:
+        if item == last_item:
+            continue
+        last_item = item
+        if item != 0:
+            result.append(_charset[item])
 
-        return "".join(result)
+    return "".join(result)

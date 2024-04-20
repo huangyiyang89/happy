@@ -9,12 +9,11 @@ import importlib
 import importlib.util
 import sys
 import random
-from typing import Literal,Callable
+from typing import Literal, Callable
 import psutil
 import happy.unit
 import happy.player
 import happy.pet
-import happy.script
 import happy.map
 from happy.mem import CgMem
 from happy.battle import Battle
@@ -38,11 +37,11 @@ class Cg(Service):
         self.pets = happy.pet.PetCollection(mem)
         self.map = happy.map.Map(mem)
         self.items = ItemCollection(mem)
-        self._scripts: list[happy.script.Script] = []
+        self._scripts: list[Script] = []
         self.is_closed = False
         self._last_update_time = 0
         self._eat_food_flag = 0
-        self.on_close:Callable = None
+        self.on_close: Callable = None
 
     @property
     def _tick_count(self):
@@ -54,7 +53,7 @@ class Cg(Service):
         return self.mem.read_int(0x00F4C304)
 
     @staticmethod
-    def open(name=""):
+    def open(name=None, account=None):
         """open cg process and add process to __opened_cg_processes[]
         Returns:
             _type_: HappyCG
@@ -64,11 +63,11 @@ class Cg(Service):
             if process not in Cg.opened_cg_processes:
                 mem = CgMem(process)
                 new_cg = Cg(mem)
-                if name not in new_cg.player.name:
-                    continue
-                Cg.opened_cg_processes.append(process)
-                new_cg.update()
-                return new_cg
+                if (name is None and account is None) or (
+                    name in new_cg.player.name or account in new_cg.account
+                ):
+                    Cg.opened_cg_processes.append(process)
+                    return new_cg
         return None
 
     def process_is_closed(self):
@@ -107,8 +106,6 @@ class Cg(Service):
             Cg.opened_cg_processes.remove(self.mem.process_id)
         if self.on_close is not None:
             self.on_close()
-
-
 
     @property
     def is_exist(self):
@@ -217,14 +214,14 @@ class Cg(Service):
             x (_type_): _description_
             y (_type_): _description_
         """
-        self.map.read_data()
         path = self.map.astar(x, y)
         if path and len(path) > 1:
             path = merge_path(path)
             self.go_to(*path[1])
         else:
-            # print("未找到路径")
+            print("未找到路径")
             self.go_to(x + random.randint(-2, 2), y + random.randint(-2, 2))
+            self.map.request_map_data()
             self.map.read_data()
 
     def go_send_call(
@@ -251,7 +248,9 @@ class Cg(Service):
         """发走路包
 
         Args:
-            direction (_type_, optional): _description_. Defaults to Literal["a", "b", "c", "d", "e", "f", "g", "h","aa", "bb", "cc", "dd", "ee", "ff", "gg", "hh"].
+            direction (_type_, optional): _description_. Defaults to \
+                Literal["a", "b", "c", "d", "e", "f", "g", "h","aa", \
+                    "bb", "cc", "dd", "ee", "ff", "gg", "hh"].
         """
         self._decode_send(f"zA {self.map.x_62} {self.map.y_62} {direction} 0")
 
@@ -274,7 +273,7 @@ class Cg(Service):
             spec.loader.exec_module(module)
             script_class = getattr(module, class_name)
             instance = script_class(self)
-            if isinstance(instance, happy.script.Script):
+            if isinstance(instance, Script):
                 self._scripts.append(instance)
 
             print(f"'{class_name}' from module '{module_name}' loaded successfully.")
@@ -332,26 +331,32 @@ class Cg(Service):
             self.use_item(first_food)
             self.select_target()
             self._decode_send(
-                f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} {self.pets.battle_pet.index+1}"
+                f"iVfo {self.map.x_62} {self.map.y_62} \
+                    {first_food.index_62} {self.pets.battle_pet.index+1}"
             )
             self._eat_food_flag += 1
 
-    def eat_drug(self, lose_hp=400, excepts=""):
+    def eat_drug(self):
         """对玩家使用物品栏中第一个类型为药的物品"""
-
-        if self.player.hp_max - self.player.hp >= lose_hp:
-            first_drug = next(
-                (drug for drug in self.items.drugs if drug.name not in excepts), None
+        first_drug = self.items.first_drug
+        if first_drug is None:
+            return
+        recovery = first_drug.is_drug
+        if self.player.hp_lost >= recovery:
+            self.use_item(first_drug)
+            self.select_target()
+            self._decode_send(
+                f"iVfo {self.map.x_62} {self.map.y_62} {first_drug.index_62} 0"
             )
-            if first_drug is not None:
-                self.use_item(first_drug)
-                self.select_target()
-                self._decode_send(
-                    f"iVfo {self.map.x_62} {self.map.y_62} {first_drug.index_62} 0"
-                )
-            else:
-                pass
-                # print("nothing to eat")
+            time.sleep(0.5)
+        if self.pets.battle_pet.hp_lost >= recovery:
+            self.use_item(first_drug)
+            self.select_target()
+            self._decode_send(
+                f"iVfo {self.map.x_62} {self.map.y_62} \
+                    {first_drug.index_62} {self.pets.battle_pet.index+1}"
+            )
+            time.sleep(0.5)
 
     def use_item(self, item: Item):
         """_summary_
@@ -378,8 +383,9 @@ class Cg(Service):
 
     def tp(self):
         """登出"""
-        if not self.battle.is_fighting:
-            self._decode_send("lO")
+        self._decode_send("lO")
+        self.mem.write_int(0x00F62954, 7)
+        self.mem.write_int(0x00F62954, 3)
 
     @property
     def is_moving(self) -> bool:
@@ -481,12 +487,9 @@ class Cg(Service):
 
     def sell(self):
         """_summary_"""
-        # xD 29 29 5o 54L 0 11\\z3\\z12\\z3\\z13\\z3\\z14\\z3\\z15\\z3\\z16\\z3\\z18\\z3\\z19\\z3\\z21\\z3\\z23\\z3\\z24\\z3\\z25\\z1\\z26\\z2\\z27\\z1
         npc_id = self.get_npc_id()
         dialog_type = self.get_dialog_type()
         if dialog_type == 5:
-            # npc_type = self.get_npc_type()
-            # npc_id_62 = b62(self.get_npc_id())
             x62 = self.map.x_62
             y62 = self.map.y_62
             items_str = ""
@@ -518,7 +521,7 @@ class Cg(Service):
     def solve_if_captch(self):
         """_summary_"""
         version = self.mem.read_string(0x00C32CAC, 20)
-        isv2 = 'v2' in version
+        isv2 = "v2" in version
         code = self.mem.read_string(0x00C32D4E, 10)
         context = self.mem.read_string(0x00C32D40, 50)
         if code != "" and code.isdigit() and len(code) == 10:
@@ -613,12 +616,10 @@ class Cg(Service):
                 bytes.fromhex(f"B8 D3 00 00 00 BE {line_str} 00 00 00 90"),
                 11,
             )
-            # self.mem.write_bytes(0x00458CB9,bytes.fromhex("C7 05 54 29 F6 00 01 00 00 00 90 90"),12)
         else:
             self.mem.write_bytes(
                 0x00458E1A, bytes.fromhex("55 E8 80 F0 FF FF 83 C4 04 A8 40"), 11
             )
-            # self.mem.write_bytes(0x00458CB9,bytes.fromhex("39 35 54 29 F6 00 0F 85 69 02 00 00"),12)
 
     def retry_if_login_failed(self):
         """_summary_"""
@@ -717,3 +718,126 @@ class Cg(Service):
         # xJ r j 5g 5Qm 1
         npc_id = self.get_npc_id()
         self._decode_send(f"xD r j 5g {b62(npc_id)} 1")
+
+    def add_point(self, index):
+        """_summary_
+
+        Args:
+            state_index (_type_): _description_
+        """
+        self._decode_send(f"IHw {index}")
+
+
+class Script:
+    """Script interface"""
+
+    def __init__(self, cg: Cg) -> None:
+        self._state = 0
+        self.name = "no name script"
+        self.cg = cg
+
+    @property
+    def state(self):
+        """0停止 1等待开始 2正在运行 3等待结束
+
+        Returns:
+            _type_: _description_
+        """
+        return self._state
+
+    @state.setter
+    def state(self, value):
+        """0停止 1等待开始 2正在运行 3等待结束
+
+        Returns:
+            _type_: _description_
+        """
+        self._state = value
+
+    @property
+    def enable(self):
+        """state > 0
+
+        Returns:
+            _type_: _description_
+        """
+        return self.state > 0
+
+    @enable.setter
+    def enable(self, value):
+        if value:
+            self.start()
+        else:
+            self.stop()
+
+    def start(self):
+        """设置state = 1 等待开始"""
+        if self.state in (0, 3):
+            self.state = 1
+
+    def stop(self):
+        """设置state = 3 等待结束"""
+        if self.state in (1, 2):
+            self.state = 3
+
+    def on_start(self, cg):
+        """_summary_"""
+
+    def on_stop(self, cg):
+        """_summary_"""
+
+    def on_update(self, cg):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+        """
+
+    def on_battle(self, cg):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+        """
+
+    def on_player_turn(self, cg):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+        """
+
+    def on_player_second_turn(self, cg):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+        """
+
+    def on_pet_turn(self, cg):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+        """
+
+    def on_pet_second_turn(self, cg):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+        """
+
+    def on_not_battle(self, cg):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+        """
+
+    def on_not_moving(self, cg):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+        """

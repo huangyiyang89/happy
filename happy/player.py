@@ -29,7 +29,7 @@ class Player(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        hp_str = self.mem.read_string(0x00CB27EC,4)
+        hp_str = self.mem.read_string(0x00CB27EC, 4)
         return int(hp_str)
 
     @property
@@ -39,7 +39,7 @@ class Player(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        hp_max_str = self.mem.read_string(0x00CB27F1,4)
+        hp_max_str = self.mem.read_string(0x00CB27F1, 4)
         return int(hp_max_str)
 
     @property
@@ -80,9 +80,9 @@ class Player(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        mp_str = self.mem.read_string(0x00CB7900,4)
+        mp_str = self.mem.read_string(0x00CB7900, 4)
         return int(mp_str)
-        
+
     @property
     def mp_lost(self):
         """_summary_
@@ -99,7 +99,7 @@ class Player(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        mp_max_str = self.mem.read_string(0x00CB7905,4)
+        mp_max_str = self.mem.read_string(0x00CB7905, 4)
         return int(mp_max_str)
 
     @property
@@ -215,3 +215,12 @@ class Player(happy.service.Service):
             pos (_type_): _description_
         """
         self._execute_player_command()
+
+    @property
+    def remain_points(self):
+        """剩余点数
+
+        Returns:
+            _type_: _description_
+        """
+        return self.mem.read_int(0x00CB0AF4)

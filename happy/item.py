@@ -127,7 +127,7 @@ class Item:
 
     @property
     def is_drug(self):
-        """_summary_
+        """返回恢复血量
 
         Returns:
             _type_: _description_

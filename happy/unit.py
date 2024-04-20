@@ -48,6 +48,15 @@ class Unit:
         return self.hp / self.hp_max * 100
 
     @property
+    def hp_lost(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.hp_max - self.hp
+
+    @property
     def mp_per(self):
         """_summary_
 
@@ -55,6 +64,15 @@ class Unit:
             _type_: _description_
         """
         return self.mp / self.mp_max * 100
+
+    @property
+    def mp_lost(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.mp_max - self.mp
 
     @property
     def position(self):
@@ -141,7 +159,7 @@ class UnitCollection(Service):
 
     def get_lowest_hp_per_friend(self):
         """_summary_"""
-        if len(self.friends) == 0 :
+        if len(self.friends) == 0:
             return None
         return min(self.friends, key=lambda unit: unit.hp_per)
 

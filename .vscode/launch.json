@@ -6,15 +6,15 @@
     "configurations": [
         {
             "name": "Launch",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}\\test32.py",
+            "program": "${workspaceFolder}\\app.py",
             "console": "integratedTerminal",
             "justMyCode": true
         },
         {
             "name": "Test",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}\\test.py",
             "console": "integratedTerminal",

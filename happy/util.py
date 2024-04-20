@@ -11,7 +11,7 @@ import cloudscraper
 import capsolver
 from PIL import Image
 from PIL import ImageSequence
-from happy.dddocr import DdddOcr
+from happy.ocr import classification
 
 
 def merge_path(path):
@@ -126,13 +126,13 @@ def timer(func):
     return wrapper
 
 
-def solve_captcha(account, code,v2=False) -> bool:
+def solve_captcha(account, code, v2=False) -> bool:
     """_summary_
 
     Args:
         url (_type_): _description_
     """
-    
+
     url = f"https://www.bluecg.net/plugin.php?id=gift:v3v&ac={account}&time={code}"
     if v2:
         url = f"https://www.bluecg.net/plugin.php?id=gift:v2v&ac={account}&time={code}"
@@ -191,8 +191,7 @@ def solve_captcha(account, code,v2=False) -> bool:
                 frame.save(image_bytes_buffer, format="PNG")
                 max_duration = duration
         # recognize captcha image
-        dddocr = DdddOcr()
-        verifycode = dddocr.classification(image_bytes_buffer)
+        verifycode = classification(image_bytes_buffer)
         checked_res = scraper.get(
             f"https://www.bluecg.net/misc.php?mod=seccode&action=check&inajax=1&modid=plugin::gift&secverify={verifycode}"
         ).text

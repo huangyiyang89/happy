@@ -175,6 +175,20 @@ class BattlePet(Service, Pet):
         skill = self.get_skill("攻擊")
         self._execute_pet_command(f"W|{skill.index:X}|{unit.position:X}")
 
+    def guard(self):
+        """_summary_
+
+        Args:
+            unit (_type_): _description_
+        """
+        skill = self.get_skill("防禦")
+        self._execute_pet_command(f"W|{skill.index:X}")
+
+    def add_point(self,index):
+        """_summary_
+        """
+        self._decode_send(f"kjSK {self.index} {index}")
+
     @property
     def hp(self):
         """_summary_
@@ -199,6 +213,10 @@ class BattlePet(Service, Pet):
         """_summary_"""
         return self.mem.read_xor_value(0x00ED5028 + self.index * 0x5110)
 
+    @property
+    def remain_points(self):
+        """_summary_"""
+        return self.mem.read_int(0x00ED5054 + self.index * 0x5110)
 
 class PetCollection(Service):
     """_summary_

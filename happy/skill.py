@@ -40,10 +40,19 @@ class PlayerSkill(Service):
         Returns:
             _type_: _description_
         """
-        if enemies_count > 6:
+        if enemies_count > 5:
             return self.level
-        if self.name in ["氣功彈", "亂射"]:
-            return enemies_count + 2
+        if self.name == "亂射":
+            return enemies_count+2
+        if self.name == "氣功彈":
+            if enemies_count > 4:
+                return self.level
+            if enemies_count == 4:
+                return 7
+            if enemies_count == 3:
+                return 4
+            if enemies_count == 2:
+                return 2
         return self.level
 
     def find_craft(self, craft_id=0, craft_name=""):

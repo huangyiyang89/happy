@@ -1,11 +1,12 @@
-"""app"""
+"""a"""
+
+import glob
 import os
 import sys
-import glob
 import logging
-import customtkinter
-import happy.core
-import happy.script
+from typing import List, Tuple
+from nicegui import ui, app
+from happy import Cg, Script
 
 logging.basicConfig(
     filename="unhappy.log",
@@ -14,188 +15,53 @@ logging.basicConfig(
     encoding="UTF-8",
 )
 
+scripts_directory = os.path.join(os.path.dirname(sys.argv[0]), "scripts\\")
+py_files = glob.glob(os.path.join(scripts_directory, "*.py"))
+script_file_names = [os.path.splitext(os.path.basename(file))[0] for file in py_files]
 
-class App(customtkinter.CTk):
-    """_summary_
+pairs: List[Tuple[Cg, ui.card]] = []
 
-    Args:
-        customtkinter (_type_): _description_
-    """
-
-    def on_button_click(self):
-        """_summary_"""
-        happy.Cg.close_handles()
-
-    def __init__(self):
-        super().__init__()
-        self.title("HappyCG")
-        self.geometry("1000x400")
-        top_frame = customtkinter.CTkFrame(self)
-        button0 = customtkinter.CTkButton(
-            top_frame, text="解除多开限制", command=self.on_button_click
-        )
-        button1 = customtkinter.CTkButton(
-            top_frame, text="解除多开限制2", command=self.on_button_click
-        )
-        top_frame.pack(side="top", padx=10, pady=5)
-        button0.pack(side="left", padx=10, pady=5)
-        button1.pack(side="left", padx=10, pady=5)
-        self.cgframes: list[Cgframe] = []
-        self.refresh()
-
-    def refresh(self):
-        """_summary_"""
-
-        cg = happy.core.Cg.open()
-
-        if cg:
-            self.remove_destroyed_frames()
-            new_frame = Cgframe(self, cg)
-            self.cgframes.append(new_frame)
-            # self.grid_all_frames()
-            new_frame.pack(side="left", padx=10, pady=5)
-            self.refresh()
-        else:
-            pass
-            #self.after(3000, self.refresh)
-
-    def remove_destroyed_frames(self):
-        """_summary_"""
-        count = len(self.cgframes)
-        for i in range(count - 1, 0, -1):
-            if not self.cgframes[i].winfo_exists():
-                self.cgframes.pop(i)
-
-    def grid_all_frames(self):
-        """_summary_"""
-        count = len(self.cgframes)
-        for i in range(0, count):
-            if self.cgframes[i].winfo_exists():
-
-                padx = 10
-                if i == 0:
-                    padx = (20, 10)
-                if i == count - 1:
-                    padx = (10, 20)
-                self.cgframes[i].grid(
-                    row=1,
-                    column=i,
-                    stick="nsew",
-                    padx=padx,
-                    pady=(10, 20),
+def timer_handler():
+    """_summary_"""
+    game = Cg.open()
+    if game:
+        with ui.card() as card:
+            pairs.append((game,card))
+            ui.label("Player Name").bind_text_from(game.player, "name")
+            ui.label("Efficiency").bind_text_from(game.get_script("里洞魔石"),"efficiency")
+            for script_file_name in script_file_names:
+                script: Script = game.load_script(
+                    scripts_directory, script_file_name, "Script"
                 )
+                if script:
+                    ui.switch(text=script.name).bind_value_to(script, "enable")
+            game.start_loop()
+    to_remove = []
+    for game,card in pairs:
+        if game.is_closed:
+            card.clear()
+            card.delete()
+            card.set_visibility(False)
+            to_remove.append((game,card))
+    for item in to_remove:
+        pairs.remove(item)
 
 
-class Cgframe(customtkinter.CTkFrame):
+
+def exception_handler(exception=""):
     """_summary_
 
     Args:
-        customtkinter (_type_): _description_
+        exception (_type_): _description_
     """
-
-    def __init__(self, master, cg: happy.core.Cg):
-        super().__init__(master, width=200, height=200)
-        self.cg = cg
-        # lable control
-        self.player_name_label = customtkinter.CTkLabel(self, text="")
-        self.player_name_label.pack()
-
-        # lable control
-        self.account_label = customtkinter.CTkLabel(self, text="")
-        self.account_label.pack()
-
-        # lable control
-        self.info_label = customtkinter.CTkLabel(self, text="")
-        self.info_label.pack()
-
-        # load scripts
-        self.scripts_directory = get_scripts_directory()
-        self.load_script_names = get_all_py_files(self.scripts_directory)
-        self.load_scripts = []
-        for script_name in self.load_script_names:
-            if "config" in script_name:
-                continue
-            self.load_scripts.append(
-                cg.load_script(self.scripts_directory, script_name, "Script")
-            )
-
-        self.switches = []
-
-        for script in self.load_scripts:
-            switch_var = customtkinter.BooleanVar(value=False)
-            switch = customtkinter.CTkSwitch(
-                self,
-                text=script.name,
-                command=lambda switch_var=switch_var, script=script: self.switch_event(
-                    switch_var, script
-                ),
-                variable=switch_var,
-                onvalue=True,
-                offvalue=False,
-                switch_width=50,
-            )
-            switch.pack()
-            self.switches.append(switch)
-
-        self.cg.start_loop()
-        self.update_ui()
-
-    def update_ui(self):
-        """_summary_
-
-        Args:
-            cg (_type_): _description_
-        """
-        if self.cg.is_closed:
-            self.destroy()
-            return
-        self.player_name_label.configure(text=self.cg.player.name)
-        self.account_label.configure(text=self.cg.account)
-        eff = self.cg.get_script("里洞魔石")
-        if eff:
-            self.info_label.configure(text=eff.efficiency)
-
-        self.after(3000, self.update_ui)
-
-    def switch_event(self, switch_var: customtkinter.BooleanVar, script: happy.Script):
-        """_summary_"""
-        if switch_var.get():
-            script.start()
-        else:
-            script.stop()
+    print(exception)
 
 
-def get_all_py_files(scripts_directory):
-    """_summary_
-
-    Args:
-        directory (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    # 获取目录中的所有 .py 文件
-    py_files = glob.glob(os.path.join(scripts_directory, "*.py"))
-    # 提取文件名（不包含扩展名）
-    file_names = [os.path.splitext(os.path.basename(file))[0] for file in py_files]
-    return file_names
-
-
-def get_scripts_directory(directory="scripts\\"):
-    """_summary_
-
-    Args:
-        directory (str, optional): _description_. Defaults to "scripts\".
-
-    Returns:
-        _type_: _description_
-    """
-    scripts_directory = os.path.join(os.path.dirname(sys.argv[0]), directory)
-    return scripts_directory
-
-
-app = App()
-app.mainloop()
-
-for frame in app.cgframes:
-    frame.cg.close()
+app.on_exception(exception_handler)
+with ui.row():
+    ui.button("解除多开限制",on_click=Cg.close_handles)
+with ui.row():
+    ui.timer(3, timer_handler)
+with ui.row():
+    ui.label("Some message")
+ui.run()

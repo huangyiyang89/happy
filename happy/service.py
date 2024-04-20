@@ -1,4 +1,5 @@
 """mem"""
+
 import time
 import happy.mem
 
@@ -8,11 +9,7 @@ class Service:
 
     def __init__(self, mem: happy.mem.CgMem) -> None:
         self.mem = mem
-        self._init()
 
-    def _init(self):
-        pass
-        
     def update(self):
         """_summary_
 
@@ -34,7 +31,14 @@ class Service:
         self.mem.write_bytes(
             0x00581150,
             bytes.fromhex(
-                "FF 25 D0 11 58 00 8B 05 00 10 58 00 A3 40 11 58 00 C7 05 44 11 58 00 00 00 00 00 68 40 11 58 00 68 40 11 58 00 E8 E6 C1 F8 FF 83 C4 08 B8 00 10 58 00 8B 0D 40 11 58 00 80 3D 02 10 58 00 20 66 89 08 74 12 80 3D 03 10 58 00 20 89 08 75 07 C6 05 03 10 58 00 20 8B 54 24 10 50 52 E8 1F C1 F8 FF 83 C4 08 C7 05 D0 11 58 00 C0 11 58 00 C3 90 8B 05 18 A7 57 00 E9 BA 65 F8 FF 90 90 90 90 90 56 11 58 00"
+                "FF 25 D0 11 58 00 8B 05 00 10 58 00 A3 40 11 58 00 C7 \
+                05 44 11 58 00 00 00 00 00 68 40 11 58 00 68 40 11 \
+                58 00 E8 E6 C1 F8 FF 83 C4 08 B8 00 10 58 00 8B \
+                0D 40 11 58 00 80 3D 02 10 58 00 20 66 89 08 \
+                74 12 80 3D 03 10 58 00 20 89 08 75 07 C6 05 03 10 \
+                58 00 20 8B 54 24 10 50 52 E8 1F C1 F8 FF 83 C4 08 C7 05 \
+                D0 11 58 00 C0 11 58 00 C3 90 8B 05 18 A7 57 00 E9 BA 65 \
+                F8 FF 90 90 90 90 90 56 11 58 00"
             ),
             132,
         )
@@ -49,7 +53,7 @@ class Service:
 
         # 延迟防止不触发
         time.sleep(0.1)
-        #print(content)
+        # print(content)
 
     def decode_export(self):
         """导出加密表"""
@@ -86,7 +90,7 @@ class Service:
                 text = self.mem.read_string(0x00581000)
                 print(content, text)
 
-    def start_print_packet(self, flag):
+    def start_print_packet(self, flag=False):
         """_summary_"""
         pointer = self.mem.read_int(0x0057A718)
         if flag:
@@ -95,8 +99,6 @@ class Service:
         while True:
             new = self.mem.read_string(pointer)
             new = new.split("\n")[0]
-            if new == last:
-                continue
-            else:
+            if new != last:
                 print(new)
                 last = new

@@ -1,9 +1,8 @@
 "script"
-import happy.script
 import happy
 
 
-class Script(happy.script.Script):
+class Script(happy.Script):
     """_summary_
 
     Args:
