@@ -143,7 +143,6 @@ def solve_captcha(account, code, v2=False) -> bool:
     main_page_text = scraper.get(url).text
     matches = re.findall(r'data-sitekey="([^"]+)"', main_page_text)
     if matches:
-        print("data-sitekey:", matches[0])
         sitekey = matches[0]
     else:
         logging.error("not match data-sitekey,%s", url)
@@ -151,7 +150,6 @@ def solve_captcha(account, code, v2=False) -> bool:
 
     matches = re.findall(r'updateseccode\(\'([^"]+)\',', main_page_text)
     if matches:
-        print("sid:", matches[0])
         sid = matches[0]
     else:
         logging.error("not match updateseccode")
@@ -197,7 +195,6 @@ def solve_captcha(account, code, v2=False) -> bool:
         ).text
 
         if "succeed" in checked_res:
-            print("图形验证码识别成功")
             break
         if i == 4:
             logging.error("验证码5次未能识别")
@@ -212,7 +209,7 @@ def solve_captcha(account, code, v2=False) -> bool:
     }
 
     res = scraper.post(url, data=data)
-    print(res)
+    print(res.content)
     return True
 
 

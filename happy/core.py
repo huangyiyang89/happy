@@ -219,7 +219,6 @@ class Cg(Service):
             path = merge_path(path)
             self.go_to(*path[1])
         else:
-            print("未找到路径")
             self.go_to(x + random.randint(-2, 2), y + random.randint(-2, 2))
             self.map.request_map_data()
             self.map.read_data()
