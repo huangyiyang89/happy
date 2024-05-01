@@ -124,7 +124,7 @@ class Cg(Service):
         self.player.update()
         self.pets.update()
         self.items.update()
-        
+
         for script in self._scripts:
             if script.enable:
                 if script.state == 1:
@@ -321,7 +321,7 @@ class Cg(Service):
             and self.pets.battle_pet
             and self.pets.battle_pet.mp_max - self.pets.battle_pet.mp >= re_mp
             and self.pets.battle_pet.mp < 300
-            and self.pets.battle_pet.has_power_magic_skill()
+            and (self.pets.battle_pet.has_power_magic_skill() or self.pets.battle_pet.hp_per<50 and self.pets.battle_pet.mp_per<10)
         ):
             self.use_item(first_food)
             self.select_target()
@@ -333,6 +333,8 @@ class Cg(Service):
 
     def eat_drug(self):
         """对玩家使用物品栏中第一个类型为药的物品"""
+        if self.player.hp_max > 500:
+            return
         first_drug = self.items.first_drug
         if first_drug is None:
             return
@@ -348,8 +350,7 @@ class Cg(Service):
             self.use_item(first_drug)
             self.select_target()
             self._decode_send(
-                f"iVfo {self.map.x_62} {self.map.y_62} \
-                    {first_drug.index_62} {self.pets.battle_pet.index+1}"
+                f"iVfo {self.map.x_62} {self.map.y_62} {first_drug.index_62} {self.pets.battle_pet.index+1}"
             )
             time.sleep(0.5)
 

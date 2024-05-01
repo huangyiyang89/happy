@@ -24,6 +24,8 @@ class Script(happy.Script):
                 cg.go_astar(cg.map.exits[0][0], cg.map.exits[0][1])
             elif "龍之住處" in cg.map.name:
                 cg.go_astar(91, 8)
+            elif "'貝茲雷姆的迷宮" in cg.map.name:
+                cg.go_astar(cg.map.exits[0][0], cg.map.exits[0][1])
             else:
                 cg.go_astar(cg.map.exits[-1][0], cg.map.exits[-1][1])
 

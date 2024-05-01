@@ -72,7 +72,6 @@ class Script(happy.Script):
         cg.eat_drug()
         cg.call_nurse()
         cg.solve_if_captch()
-        
 
 
 class Strategy:
@@ -109,13 +108,19 @@ class Strategy:
         if target is None:
             return
 
-        if cg.player.hp_per < 80:
-            drug = cg.items.first_drug
-            if drug:
+        drug = cg.items.first_drug
+        if drug:
+            if cg.player.hp_per < 80:
                 recovery = drug.is_drug * cg.player.value_recovery / 100
                 if cg.player.hp_lost >= recovery:
                     cg.player.use_battle_item(drug, cg.player)
                     return
+            if cg.player.hp_per < 30:
+                cg.player.use_battle_item(drug, cg.player)
+                return
+            if cg.pets.battle_pet and cg.pets.battle_pet.hp_per < 30:
+                cg.player.use_battle_item(drug, cg.pets.battle_pet)
+                return
 
         if (
             enemies_count > 2

@@ -104,10 +104,16 @@ class Script(happy.Script):
         # 德威特岛
         if cg.map.id == 30001:
             cg.go_if(211, 344, 156, 339, 156, 341)
+           
             cg.go_if(157, 342, 153, 315)
             cg.go_if(153, 315, 122, 306)
             cg.go_if(120, 307, 129, 295)
             cg.go_if(129, 295, 128, 295)
+            #处理卡死
+            cg.go_if(155, 326, 154, 326)
+            cg.go_if(151, 321, 153, 321)
+            cg.go_if(151, 313, 152, 312)
+
             return
 
         # 里洞（外）
@@ -313,7 +319,7 @@ class Script(happy.Script):
                 cg.tp()
                 logging.warning("%s 角色疑似卡死,TP.", cg.account)
                 send_wechat_notification(
-                    f"{cg.account} {cg.player.name} 角色疑似卡死,TP."
+                    f"{cg.account} {cg.player.name} 角色疑似卡死,{cg.map.name} {cg.map.x},{cg.map.y} TP."
                 )
                 self.move_record = [(0, 0, 0), (1, 1, 1), (2, 2, 2)]
 

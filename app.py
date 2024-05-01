@@ -62,7 +62,7 @@ def exception_handler(exception=""):
 with ui.row():
     ui.button("解除多开限制", on_click=Cg.close_handles)
 with ui.row():
-    ui.timer(3, timer_handler)
+    ui.timer(2, timer_handler)
 with ui.row():
     ui.label("Some message")
 ui.run(reload=False, port=native.find_open_port())

@@ -156,7 +156,6 @@ def solve_captcha(account, code, v2=False) -> bool:
         return True
 
     # solve recaptcha
-    capsolver.api_key = "CAP-"
     capsolver.api_key = key
     solution = capsolver.solve(
         {

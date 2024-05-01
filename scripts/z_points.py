@@ -17,10 +17,14 @@ class Script(happy.Script):
         if cg.player.remain_points > 3:
             cg.add_point(1)
             cg.add_point(1)
-            cg.add_point(2)
-            cg.add_point(3)
+            cg.add_point(0)
+            cg.add_point(0)
 
         if cg.pets.battle_pet is not None and cg.pets.battle_pet.remain_points > 0:
-            cg.pets.battle_pet.add_point(1)
+            pet = cg.pets.battle_pet
+            if pet.name in ["改造樹精"]:
+                cg.pets.battle_pet.add_point(0)
+            if pet.name in ["小蝙蝠","使魔","影蝙蝠"]:
+                cg.pets.battle_pet.add_point(1)
 
         cg.drop_item("國民袍", "國民靴")
