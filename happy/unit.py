@@ -138,6 +138,26 @@ class UnitCollection(Service):
             _unit = Unit(data_array[i : i + 12])
             self._units[_unit.position] = _unit
         return self
+    
+    @property
+    def player(self):
+        """_summary_
+        """
+        pos = self.mem.read_int(0x005989DC)
+        return self.get_unit(pos)
+    
+    @property
+    def pet(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        player_pos = self.mem.read_int(0x005989DC)
+        pet_pos = player_pos+5
+        if player_pos>=5:
+            pet_pos = 10-player_pos
+        return self.get_unit(pet_pos)
 
     @property
     def friends(self):
@@ -295,3 +315,18 @@ class UnitCollection(Service):
         """_summary_"""
         for unit in self._units:
             print(unit.formatted_info)
+
+    #根据位置查找单位
+    def get_unit(self,position):
+        """_summary_
+
+        Args:
+            position (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        for unit in self._units:
+            if unit.position == position and unit.exist:
+                return unit
+        return None

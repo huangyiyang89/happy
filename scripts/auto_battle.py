@@ -119,7 +119,7 @@ class Strategy:
                 cg.player.use_battle_item(drug, cg.player)
                 return
             if cg.pets.battle_pet and cg.pets.battle_pet.hp_per < 30:
-                cg.player.use_battle_item(drug, cg.pets.battle_pet)
+                cg.player.use_battle_item(drug, cg.battle.units.pet)
                 return
 
         if (

@@ -75,7 +75,7 @@ class Pet(happy.unit.Unit):
             battle_flag (_type_): _description_
             skills (list[happy.skill.PetSkill]): 不包含空技能
         """
-
+        
         self.index = index
         self.name = name
         self.battle_flag = battle_flag
