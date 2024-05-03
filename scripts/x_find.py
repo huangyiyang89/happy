@@ -33,3 +33,13 @@ class Script(happy.Script):
         if len(cg.map.exits) < 2:
             cg.map.request_map_data()
             cg.map.read_data()
+
+    def on_battle(self, cg: happy.Cg):
+        """_summary_
+
+        Args:
+            cg (_type_): _description_
+        """
+        if len(cg.battle.units.enemies)>0:
+            if cg.battle.units.enemies[0].name in ["修伯特"]:
+                print(cg.battle.units.enemies[0].formatted_info)

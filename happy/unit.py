@@ -156,7 +156,7 @@ class UnitCollection(Service):
         player_pos = self.mem.read_int(0x005989DC)
         pet_pos = player_pos+5
         if player_pos>=5:
-            pet_pos = 10-player_pos
+            pet_pos = player_pos-5
         return self.get_unit(pet_pos)
 
     @property
@@ -311,9 +311,9 @@ class UnitCollection(Service):
             n >>= 1
         return count
 
-    def print_all_units(self):
+    def print_all_enemies(self):
         """_summary_"""
-        for unit in self._units:
+        for unit in self.enemies:
             print(unit.formatted_info)
 
     #根据位置查找单位
