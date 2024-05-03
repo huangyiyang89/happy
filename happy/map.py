@@ -99,7 +99,6 @@ class Map(happy.service.Service):
             self.last_map_id = self.id
             self.exits = []
 
-
     def read_data(self):
         """_summary_"""
         try:
@@ -158,8 +157,8 @@ class Map(happy.service.Service):
                         #     self.map_flag_data[i][j] = 0
 
                         # east, north, flag = map_info_dict[str(map_id)]
-                        # if not flag:
-                        #     self.map_flag_data[i][j] = 0
+                        if map_id == 0 or flag == 0:
+                            self.map_flag_data[i][j] = 0
 
                         if object_id:
                             if str(object_id) in map_info_dict:
@@ -169,6 +168,7 @@ class Map(happy.service.Service):
                                         self.map_flag_data[i - m][j + l] = f
                             else:
                                 self.map_flag_data[i][j] = 0
+                                print("该地图存在字典中不存在的object_id")
                 self.exits = sorted(self.exits, key=lambda x: x[2])
                 return True
         except FileNotFoundError:
@@ -191,6 +191,7 @@ class Map(happy.service.Service):
         Args:
             goal (_type_): _description_
         """
+
         def neighbors(node, grid):
             x, y, _ = node
             directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
@@ -244,8 +245,7 @@ class Map(happy.service.Service):
         )
 
     def read_info_data(self):
-        """_summary_
-        """
+        """_summary_"""
         # GraphicInfo_66.bin 4100+
         # GraphicInfo_Joy_54 243021
         # GraphicInfo_Joy_CH1 91500

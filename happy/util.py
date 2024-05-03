@@ -138,7 +138,8 @@ def solve_captcha(account, code, v2=False) -> bool:
         url = f"https://www.bluecg.net/plugin.php?id=gift:v2v&ac={account}&time={code}"
     scraper = cloudscraper.create_scraper()
     scraper.headers["Cache-Control"] = "no-cache"
-
+    print("正在验证：")
+    print(url)
     # request main_page
     main_page_text = scraper.get(url).text
     matches = re.findall(r'data-sitekey="([^"]+)"', main_page_text)

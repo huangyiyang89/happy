@@ -172,14 +172,14 @@ class Strategy:
             pet.cast(magic, target)
             return
 
-        guard_counter = pet.get_skill("崩擊")
-        enemies_count = len(cg.battle.units.enemies)
-        friends_count = len(cg.battle.units.friends)
+        # guard_counter = pet.get_skill("崩擊")
+        # enemies_count = len(cg.battle.units.enemies)
+        # friends_count = len(cg.battle.units.friends)
+        
+        # if enemies_count < 4 and guard_counter and friends_count > 6 and bet(50):
+        #     pet.cast(guard_counter, target)
+        #     return
         first_skill = pet.skills[0]
-        if enemies_count < 4 and guard_counter and friends_count > 6 and bet(50):
-            pet.cast(guard_counter, target)
-            return
-
         pet.cast(first_skill, target)
         # pet.attack(target)
 
