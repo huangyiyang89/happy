@@ -146,19 +146,14 @@ class Map(happy.service.Service):
                                 + 2
                             ],
                         )[0]
-
+                       
+                        #if map_id == 0:
+                            #self.map_flag_data[i][j] = 0
+                        
+                        # flag == 49162是出口切换地图 49155是水晶传送上下楼梯 49152正常通过
                         if flag == 49155:
                             self.exits.append((j, i, object_id))
                             # print(f"找到场景转换坐标={j},{i},object_id={object_id}")
-
-                        # if object_id:
-                        #     print(j,i,object_id)
-                        # if flag == 0:
-                        #     self.map_flag_data[i][j] = 0
-
-                        # east, north, flag = map_info_dict[str(map_id)]
-                        if map_id == 0 or flag == 0:
-                            self.map_flag_data[i][j] = 0
 
                         if object_id:
                             if str(object_id) in map_info_dict:
@@ -167,8 +162,9 @@ class Map(happy.service.Service):
                                     for m in range(s):
                                         self.map_flag_data[i - m][j + l] = f
                             else:
-                                self.map_flag_data[i][j] = 0
-                                print("该地图存在字典中不存在的object_id")
+                                # self.map_flag_data[i][j] = 0
+                                print(f"该地图{self.name} 存在字典中不存在的object_id={object_id}")
+
                 self.exits = sorted(self.exits, key=lambda x: x[2])
                 return True
         except FileNotFoundError:

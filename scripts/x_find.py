@@ -30,9 +30,8 @@ class Script(happy.Script):
                 cg.go_astar(cg.map.exits[-1][0], cg.map.exits[-1][1])
 
     def on_update(self, cg: happy.Cg):
-        if len(cg.map.exits) < 2:
-            cg.map.request_map_data()
-            cg.map.read_data()
+        cg.map.request_map_data()
+        cg.map.read_data()
 
     def on_battle(self, cg: happy.Cg):
         """_summary_
