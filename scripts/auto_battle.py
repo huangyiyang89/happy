@@ -48,16 +48,8 @@ class Script(happy.Script):
         Args:
             cg (happy.core.Cg): _description_
         """
-        a = cg.mem.read_int(0x005988AC)
-        b = cg.mem.read_int(0x00598940)
-
-        if a == 0 and b == 0:
+        if cg.battle.ready_to_action:
             self.strategy.player_action(cg)
-        else:
-            if a != b:
-                pass
-            else:
-                self.strategy.player_action(cg)
 
     def on_pet_turn(self, cg: Cg):
         """_summary_
@@ -65,7 +57,8 @@ class Script(happy.Script):
         Args:
             cg (happy.core.Cg): _description_
         """
-        self.strategy.pet_action(cg)
+        if cg.battle.ready_to_action:
+            self.strategy.pet_action(cg)
 
     def on_not_battle(self, cg: Cg):
         cg.eat_food()
@@ -118,7 +111,11 @@ class Strategy:
             if cg.player.hp_per < 30:
                 cg.player.use_battle_item(drug, cg.player)
                 return
-            if cg.pets.battle_pet and cg.pets.battle_pet.hp_per < 30 and cg.pets.battle_pet.hp>0:
+            if (
+                cg.pets.battle_pet
+                and cg.pets.battle_pet.hp_per < 30
+                and cg.pets.battle_pet.hp > 0
+            ):
                 cg.player.use_battle_item(drug, cg.battle.units.pet)
                 return
 
@@ -175,7 +172,7 @@ class Strategy:
         # guard_counter = pet.get_skill("崩擊")
         # enemies_count = len(cg.battle.units.enemies)
         # friends_count = len(cg.battle.units.friends)
-        
+
         # if enemies_count < 4 and guard_counter and friends_count > 6 and bet(50):
         #     pet.cast(guard_counter, target)
         #     return
