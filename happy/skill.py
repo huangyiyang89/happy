@@ -378,8 +378,8 @@ class PlayerSkillCollection(Service):
         self.update()
 
     def update(self):
-        self._skills: list[PlayerSkill] = [None] * 15
-        for i in range(0, 14):
+        self._skills: list[PlayerSkill] = [None] * 20
+        for i in range(0, 13):
             name = self.mem.read_string(0x00E8D6EC + 0x4C4C * i)
             level = self.mem.read_int(0x00E8D708 + 0x4C4C * i)
             customized_position = self.mem.read_int(0x00E8D724 + 0x4C4C * i)

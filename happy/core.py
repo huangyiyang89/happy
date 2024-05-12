@@ -8,7 +8,6 @@ import logging
 import importlib
 import importlib.util
 import sys
-import random
 from typing import Literal, Callable
 import psutil
 import happy.unit
@@ -21,6 +20,7 @@ from happy.service import Service
 from happy.item import Item, ItemCollection
 from happy.util import b62, merge_path, solve_captcha
 import happy.pywinhandle
+import concurrent.futures
 
 
 class Cg(Service):
@@ -53,7 +53,7 @@ class Cg(Service):
         return self.mem.read_int(0x00F4C304)
 
     @staticmethod
-    def open(name=None, account=None):
+    def open(account=None,name=None):
         """open cg process and add process to __opened_cg_processes[]
         Returns:
             _type_: HappyCG
@@ -63,9 +63,13 @@ class Cg(Service):
             if process not in Cg.opened_cg_processes:
                 mem = CgMem(process)
                 new_cg = Cg(mem)
-                if (name is None and account is None) or (
-                    name in new_cg.player.name or account in new_cg.account
-                ):
+                if account and new_cg.account == account:
+                    Cg.opened_cg_processes.append(process)
+                    return new_cg
+                if name and new_cg.player.name and name in new_cg.player.name:
+                    Cg.opened_cg_processes.append(process)
+                    return new_cg
+                if not account and not name:
                     Cg.opened_cg_processes.append(process)
                     return new_cg
         return None
@@ -294,7 +298,7 @@ class Cg(Service):
                 time.sleep(0.5)
             return
 
-        re_mp = 600
+        re_mp = 0
         if first_food.name == "魚翅湯":
             re_mp = 1000
         if first_food.name == "壽喜鍋":
@@ -321,13 +325,18 @@ class Cg(Service):
             and self.pets.battle_pet
             and self.pets.battle_pet.mp_max - self.pets.battle_pet.mp >= re_mp
             and self.pets.battle_pet.mp < 300
-            and (self.pets.battle_pet.has_power_magic_skill() or self.pets.battle_pet.hp_per<50 and self.pets.battle_pet.mp_per<10)
+            and (
+                self.pets.battle_pet.has_power_magic_skill()
+                or (
+                    self.pets.battle_pet.hp_per < 50
+                    and self.pets.battle_pet.mp_per < 10
+                )
+            )
         ):
             self.use_item(first_food)
             self.select_target()
             self._decode_send(
-                f"iVfo {self.map.x_62} {self.map.y_62} \
-                    {first_food.index_62} {self.pets.battle_pet.index+1}"
+                f"iVfo {self.map.x_62} {self.map.y_62} {first_food.index_62} {self.pets.battle_pet.index+1}"
             )
             self._eat_food_flag += 1
 
@@ -508,11 +517,18 @@ class Cg(Service):
         self.mem.write_int(0x0057E998, 2)
 
     @staticmethod
-    def close_handles():
+    def close_handles(callback):
         """_summary_"""
-        process_ids = list(CgMem.list_cg_processes())
-        handles = happy.pywinhandle.find_handles(process_ids, ["汢敵"])
-        happy.pywinhandle.close_handles(handles)
+
+        def thread_exec():
+            process_ids = list(CgMem.list_cg_processes())
+            handles = happy.pywinhandle.find_handles(process_ids, ["汢敵"])
+            happy.pywinhandle.close_handles(handles)
+            if callable(callback):
+                callback()
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.submit(thread_exec)
 
     def solve_if_captch(self):
         """_summary_"""

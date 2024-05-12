@@ -60,7 +60,7 @@ def exception_handler(exception=""):
 
 
 with ui.row():
-    ui.button("解除多开限制", on_click=Cg.close_handles)
+    ui.button("解除多开限制", on_click=lambda :Cg.close_handles(lambda: ui.notify('Done')))
 with ui.row():
     ui.timer(2, timer_handler)
 with ui.row():
