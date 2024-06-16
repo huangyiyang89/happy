@@ -1,7 +1,6 @@
 """a"""
-
-import glob
 import os
+import glob
 import sys
 import logging
 from typing import List, Tuple
@@ -59,8 +58,14 @@ def exception_handler(exception=""):
     print(exception)
 
 
+def close_notify():
+    """_summary_
+    """
+    Cg.close_handles()
+    ui.notify('Done')
+
 with ui.row():
-    ui.button("解除多开限制", on_click=lambda :Cg.close_handles(lambda: ui.notify('Done')))
+    ui.button("解除多开限制", on_click=close_notify)
 with ui.row():
     ui.timer(2, timer_handler)
 with ui.row():

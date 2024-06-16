@@ -24,11 +24,11 @@ class Script(happy.Script):
             cg (happy.core.Cg): _description_
         """
 
-        if cg.map.x == 135 and cg.map.y == 175:
-            cg.go_to(135, 174)
-            return
-        if cg.map.x == 135 and cg.map.y == 174:
+        if cg.map.x == 134 and cg.map.y == 174:
             cg.go_to(135, 175)
+            return
+        if cg.map.x == 135 and cg.map.y == 175:
+            cg.go_to(134, 174)
             return
 
         if self.start_x == 0 and self.start_y == 0:

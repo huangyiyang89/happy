@@ -15,7 +15,7 @@ class Script(happy.Script):
 
     def __init__(self, cg) -> None:
         super().__init__(cg)
-        self.name = "里洞魔石"
+        self.name = "里洞带队"
         self.start_time = time.time
         self.sell_record = []
         self.move_record = []
@@ -90,11 +90,37 @@ class Script(happy.Script):
             self.go_to_sell(cg)
             return
 
+        #等待加队
+        if len(cg.customize_title)>0 and cg.customize_title in "012345":
+            count = int(cg.customize_title)
+        else:
+            count = 2
+
+        if cg.get_team_count()<count:
+            if cg.map.name not in "亞諾曼城":
+                cg.tp()
+                return
+            if (cg.map.x, cg.map.y) == (120, 139):
+                cg.right_click("A")
+                time.sleep(0.5)
+                return
+            if (cg.map.x, cg.map.y) == (68, 100):
+                cg.go_to(67,100)
+                return
+            if (cg.map.x, cg.map.y) == (67, 100):
+                time.sleep(1)
+                return
+            cg.tp()
+
         # 亞諾曼
         if cg.map.name in "亞諾曼城":
             if (cg.map.x, cg.map.y) == (120, 139):
                 cg.right_click("A")
                 time.sleep(0.5)
+            
+            if (cg.get_team_count()==0):
+                return
+
             if cg.map.x >= 21 and cg.map.x <= 73 and cg.map.y >= 97 and cg.map.y <= 127:
                 cg.go_if(73, 97, 60, 105)
                 cg.go_if(61, 105, 57, 125)

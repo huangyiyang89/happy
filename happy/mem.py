@@ -11,14 +11,13 @@ class CgMem(pymem.Pymem):
     Args:
         pymem (_type_): _description_
     """
-
     def read_string(self, address, byte=50, encoding="big5", end=b"\x00"):
         """_summary_
 
         Args:
             address (_type_): _description_
             byte (int, optional): _description_. Defaults to 50.
-            encoding (str, optional): _description_. Defaults to "big5".
+            encoding (str, optional): _description_. Defaults to "big5hkscs".
             end (bytes, optional): _description_. Defaults to b"\x00".
 
         Returns:
@@ -32,6 +31,7 @@ class CgMem(pymem.Pymem):
             buff = buff.decode(encoding, "replace")
             return buff
         except Exception as e:  # pylint: disable=broad-except
+            print(buff)
             print(e)
             return ""
 

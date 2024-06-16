@@ -1,4 +1,4 @@
 import happy
 
-cg = happy.Cg.open(account='pikachuls05')
-cg.eat_food()
+cg = happy.Cg.open('asd199001')
+cg.join_team()

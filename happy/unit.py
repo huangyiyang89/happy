@@ -130,7 +130,7 @@ class UnitCollection(Service):
 
     def update(self):
         self._units = [Unit() for _ in range(20)]
-        battle_units_buffer = self.mem.read_string(0x00590758, 1000)
+        battle_units_buffer = self.mem.read_string(0x00590758, 1000,encoding="big5hkscs")
         if len(battle_units_buffer) < 12:
             return self
         data_array = battle_units_buffer[4:].split("|")

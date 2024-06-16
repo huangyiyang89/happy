@@ -18,9 +18,9 @@ from happy.mem import CgMem
 from happy.battle import Battle
 from happy.service import Service
 from happy.item import Item, ItemCollection
-from happy.util import b62, merge_path, solve_captcha
+from happy.util import b62, merge_path, solve_captcha, solve_captcha_v2
 import happy.pywinhandle
-import concurrent.futures
+from pymem.exception import MemoryReadError
 
 
 class Cg(Service):
@@ -53,7 +53,7 @@ class Cg(Service):
         return self.mem.read_int(0x00F4C304)
 
     @staticmethod
-    def open(account=None,name=None):
+    def open(account=None, name=None):
         """open cg process and add process to __opened_cg_processes[]
         Returns:
             _type_: HappyCG
@@ -89,10 +89,9 @@ class Cg(Service):
             try:
                 self.update()
                 time.sleep(0.1)
-            except Exception as e:  # pylint: disable=broad-except
+            except MemoryReadError as e:
                 print(e)
-                if self.process_is_closed():
-                    self.close()
+                self.close()
 
     def start_loop(self):
         """start main loop not used yet"""
@@ -355,7 +354,8 @@ class Cg(Service):
                 f"iVfo {self.map.x_62} {self.map.y_62} {first_drug.index_62} 0"
             )
             time.sleep(0.5)
-        if self.pets.battle_pet.hp_lost >= recovery:
+
+        if self.pets.battle_pet and self.pets.battle_pet.hp_lost >= recovery:
             self.use_item(first_drug)
             self.select_target()
             self._decode_send(
@@ -411,6 +411,15 @@ class Cg(Service):
         return self.mem.read_string(0x00D15644)
 
     @property
+    def customize_title(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.mem.read_string(0x00F4C409)
+
+    @property
     def is_opening_dialog(self):
         """_summary_
 
@@ -444,6 +453,18 @@ class Cg(Service):
             _type_: _description_
         """
         return self.mem.read_int(0x00CAF1F4)
+
+    def get_team_count(self):
+        """队伍人数,0为未组队
+        Returns:
+            _type_: _description_
+        """
+        party1 = self.mem.read_int(0x00FFD000)
+        party2 = self.mem.read_int(0x00FFD030)
+        party3 = self.mem.read_int(0x00FFD060)
+        party4 = self.mem.read_int(0x00FFD090)
+        party5 = self.mem.read_int(0x00FFD0C0)
+        return party1 + party2 + party3 + party4 + party5
 
     def call_nurse(self):
         """打开对话窗口后三补"""
@@ -490,6 +511,10 @@ class Cg(Service):
                 ):
                     self._decode_send(f"xD {x62} {y62} 5W {npc_id_62} 4")
 
+    def join_team(self):
+        """join team"""
+        self._decode_send(f"zn {self.map.x_62} {self.map.y_62} 1")
+
     def sell(self):
         """_summary_"""
         npc_id = self.get_npc_id()
@@ -517,18 +542,11 @@ class Cg(Service):
         self.mem.write_int(0x0057E998, 2)
 
     @staticmethod
-    def close_handles(callback):
+    def close_handles():
         """_summary_"""
-
-        def thread_exec():
-            process_ids = list(CgMem.list_cg_processes())
-            handles = happy.pywinhandle.find_handles(process_ids, ["汢敵"])
-            happy.pywinhandle.close_handles(handles)
-            if callable(callback):
-                callback()
-
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            executor.submit(thread_exec)
+        process_ids = list(CgMem.list_cg_processes())
+        handles = happy.pywinhandle.find_handles(process_ids, ["汢敵"])
+        happy.pywinhandle.close_handles(handles)
 
     def solve_if_captch(self):
         """_summary_"""
@@ -537,7 +555,10 @@ class Cg(Service):
         code = self.mem.read_string(0x00C32D4E, 10)
         context = self.mem.read_string(0x00C32D40, 50)
         if code != "" and code.isdigit() and len(code) == 10:
-            success = solve_captcha(self.account, code, isv2)
+            if isv2:
+                success = solve_captcha_v2(self.account, code)
+            else:
+                success = solve_captcha(self.account, code)
             if success:
                 self.mem.write_string(0x00C32D4E, "\0\0\0\0\0\0\0\0\0\0")
             else:

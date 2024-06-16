@@ -7,7 +7,7 @@ import time
 from happy.mem import CgMem
 from happy.util import b62
 import happy.service
-from happy.dict import map_info_dict
+from happy.dict import map_info_dict, map_flag_30001
 
 
 class Map(happy.service.Service):
@@ -88,10 +88,14 @@ class Map(happy.service.Service):
         Returns:
             _type_: _description_
         """
-        path = self.mem.read_string(0x0018CCCC)
+
+        path = self.mem.read_string(0x0018CCCC,encoding="UTF-8")
         if "map" not in path:
-            path = self.mem.read_string(0x0018CCCC - 4)
+            path = self.mem.read_string(0x0018CCCC - 4,encoding="UTF-8")
+        if "map" not in path:
+            return ""
         return self.mem.get_directory() + "\\" + path
+
 
     def update(self):
         if self.id != self.last_map_id:
@@ -101,7 +105,33 @@ class Map(happy.service.Service):
 
     def read_data(self):
         """_summary_"""
+
+        def set_rectangle_to_zero(map_array, x1, y1, x2, y2,flag = 0):
+            """
+            将地图数组中指定矩形区域的值全部设置为0。
+
+            参数：
+            - map_array: 地图数组
+            - x1, y1: 矩形区域左上角的坐标
+            - x2, y2: 矩形区域右下角的坐标
+            """
+            for i in range(x1, x2 + 1):
+                for j in range(y1, y2 + 1):
+                    map_array[j][i] = flag
+
+        if self.id == 30001:
+            self.map_flag_data = map_flag_30001
+            set_rectangle_to_zero(self.map_flag_data, 150, 334, 151, 344,1)
+            set_rectangle_to_zero(self.map_flag_data, 148, 333, 150, 335,1)
+            # set_rectangle_to_zero(self.map_flag_data, 124, 310, 143, 325)
+            # with open("exported_array.py", "w") as f:
+            #     f.write("exported_array = ")
+            #     f.write(str(self.map_flag_data))
+
+            return True
         try:
+            if self.file_path == "":
+                return False
             with open(self.file_path, "rb") as file:
                 header = file.read(20)
                 magic_word, self.width_east, self.height_south = struct.unpack(
@@ -146,24 +176,31 @@ class Map(happy.service.Service):
                                 + 2
                             ],
                         )[0]
-                       
-                        #if map_id == 0:
-                            #self.map_flag_data[i][j] = 0
-                        
+
+                        # if map_id == 0:
+                        # self.map_flag_data[i][j] = 0
+
                         # flag == 49162是出口切换地图 49155是水晶传送上下楼梯 49152正常通过
                         if flag == 49155:
                             self.exits.append((j, i, object_id))
                             # print(f"找到场景转换坐标={j},{i},object_id={object_id}")
 
+                        # if flag == 0:未读取地图，不能加
+                        #     self.map_flag_data[i][j] = 0
+
                         if object_id:
-                            if str(object_id) in map_info_dict:
+                            if object_id == 2 and flag == 49152:
+                                pass
+                            elif str(object_id) in map_info_dict:
                                 e, s, f = map_info_dict[str(object_id)]
                                 for l in range(e):
                                     for m in range(s):
                                         self.map_flag_data[i - m][j + l] = f
                             else:
                                 # self.map_flag_data[i][j] = 0
-                                print(f"该地图{self.name} 存在字典中不存在的object_id={object_id}")
+                                print(
+                                    f"该地图{self.name} 存在字典中不存在的object_id={object_id}"
+                                )
 
                 self.exits = sorted(self.exits, key=lambda x: x[2])
                 return True

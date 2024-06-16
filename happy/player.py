@@ -1,5 +1,6 @@
 """player class"""
 
+import math
 import time
 import happy.service
 import happy.unit
@@ -103,6 +104,15 @@ class Player(happy.service.Service):
         return int(mp_max_str)
 
     @property
+    def level(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        return self.mem.read_int(0x00F4C2F4)
+
+    @property
     def value_recovery(self):
         """回复
 
@@ -150,7 +160,7 @@ class Player(happy.service.Service):
     @property
     def name(self):
         """kk"""
-        return self.mem.read_string(0x00F4C3F8)
+        return self.mem.read_string(0x00F4C3F8, encoding="big5hkscs")
 
     @property
     def position_hex(self):
@@ -184,12 +194,14 @@ class Player(happy.service.Service):
             lv (_type_): _description_
             pos (_type_): _description_
         """
-        cast_level = use_level if skill.level > use_level else skill.level
+        max_level = math.floor(self.level / 10) + 1
+        cast_level = min(skill.level, use_level, max_level)
         position = unit.position if unit is not None else 0
         if "強力" in skill.name:
             position = position + 0x14
         if "超強" in skill.name:
             position = 0x29 if unit.is_enemy else 0x28
+
         self._execute_player_command(f"S|{skill.index:X}|{cast_level-1:X}|{position:X}")
 
     def use_battle_item(self, item: Item, unit: happy.unit.Unit = None):
