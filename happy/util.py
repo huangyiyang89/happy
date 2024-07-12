@@ -12,7 +12,7 @@ import capsolver
 from PIL import Image
 from PIL import ImageSequence
 from happy.ocr import classification
-from happy.key import key
+from happy.key import key,twokey
 
 
 def merge_path(path):
@@ -300,6 +300,7 @@ def solve_captcha_old(account, code) -> bool:
     return True
 
 def solve_captcha(account, code) -> bool:
+
     """_summary_
 
     Args:
@@ -334,30 +335,48 @@ def solve_captcha(account, code) -> bool:
     
     
     # solve cf_turnstile
-    capsolver.api_key = key
-    solution = capsolver.solve(
-        {
-            "type": "AntiTurnstileTaskProxyLess",
-            "websiteURL": url,
-            "websiteKey": sitekey,
-        }
-    )
+    # capsolver.api_key = key
+    # solution = capsolver.solve(
+    #     {
+    #         "type": "AntiTurnstileTaskProxyLess",
+    #         "websiteURL": url,
+    #         "websiteKey": sitekey,
+    #     }
+    # )
 
-    cf_turnstile_response = solution["token"]
-    user_agent = solution["userAgent"]
-    if not cf_turnstile_response or not user_agent:
-        logging.error("capsolver 未响应结果")
-        print("capsolver not work")
-        return False
+    # cf_turnstile_response = solution["token"]
+    # user_agent = solution["userAgent"]
+    # if not cf_turnstile_response or not user_agent:
+    #     logging.error("capsolver 未响应结果")
+    #     print("capsolver not work")
+    #     return False
+    from twocaptcha import solver
+    
+    solver = solver.TwoCaptcha(twokey)
 
-    # post verify
-    data = {
-        "cf-turnstile-response": cf_turnstile_response,
+    try:
+        result = solver.turnstile(
+            sitekey=sitekey,
+            url=url
+        )
+
+    except Exception as e:
+        print(e)
+
+    else:
+        # post verify
+        data = {
+        "cf-turnstile-response": result["code"],
         "submit": "",
-    }
-    res = scraper.post(url, data=data)
-    print(res)
-    return True
+        }
+        res = scraper.post(url, data=data)
+        print(res)
+        return True
+
+
+
+    
+    
 def send_wechat_notification(content):
     """_summary_
 
@@ -381,3 +400,6 @@ def send_wechat_notification(content):
             "Failed to send Markdown message. Status code:",
             response.status_code,
         )
+
+
+

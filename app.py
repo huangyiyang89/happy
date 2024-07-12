@@ -70,4 +70,4 @@ with ui.row():
     ui.timer(2, timer_handler)
 with ui.row():
     ui.label("Some message")
-ui.run(reload=False, port=native.find_open_port())
+ui.run(reload=False, port=native.find_open_port(8500,8999))
