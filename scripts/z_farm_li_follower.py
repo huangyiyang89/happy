@@ -82,7 +82,7 @@ class Script(happy.Script):
             self.go_to_heal(cg)
             return
 
-        if cg.player.injury:
+        if cg.player.injury or (cg.pets.battle_pet and cg.pets.battle_pet.injury):
             self.go_to_cure(cg)
             return
 

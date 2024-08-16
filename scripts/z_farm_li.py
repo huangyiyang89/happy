@@ -82,7 +82,7 @@ class Script(happy.Script):
             self.go_to_heal(cg)
             return
 
-        if cg.player.injury:
+        if cg.player.injury or (cg.pets.battle_pet and cg.pets.battle_pet.injury):
             self.go_to_cure(cg)
             return
 
@@ -166,6 +166,9 @@ class Script(happy.Script):
         """
         print(cg.player.name + ":" + self.efficiency)
         if cg.map.name in "亞諾曼城":
+            if cg.map.x == 116 and cg.map.y == 134:
+                cg.go_to(116, 135)
+                return
             if cg.map.x < 122 and cg.map.x > 114 and cg.map.y < 141 and cg.map.y > 133:
                 cg.go_to(116, 134)
                 return

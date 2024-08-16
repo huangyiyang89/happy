@@ -56,7 +56,7 @@ class Script(happy.Script):
             self.go_to_sell(cg)
             return
 
-        if cg.player.mp_per != 100 and cg.map.name in ("亞諾曼城", "中央醫院"):
+        if (cg.player.mp_per != 100 or cg.player.mp_per != 100) and cg.map.name in ("亞諾曼城", "中央醫院"):
             self.go_to_heal(cg)
             return
 
@@ -82,7 +82,7 @@ class Script(happy.Script):
             self.go_to_heal(cg)
             return
 
-        if cg.player.injury:
+        if cg.player.injury or (cg.pets.battle_pet and cg.pets.battle_pet.injury):
             self.go_to_cure(cg)
             return
 

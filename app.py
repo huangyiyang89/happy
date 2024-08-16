@@ -1,9 +1,8 @@
-"""a"""
 import os
 import glob
 import sys
 import logging
-from typing import List, Tuple
+from typing import List
 from nicegui import ui, native
 from happy import Cg, Script
 
@@ -18,56 +17,50 @@ scripts_directory = os.path.join(os.path.dirname(sys.argv[0]), "scripts\\")
 py_files = glob.glob(os.path.join(scripts_directory, "*.py"))
 script_file_names = [os.path.splitext(os.path.basename(file))[0] for file in py_files]
 
-pairs: List[Tuple[Cg, ui.card]] = []
-
+cg_list: List[Cg] = []
 
 def timer_handler():
-    """_summary_"""
+    """定时器处理函数"""
     game = Cg.open()
     if game:
-        with ui.card() as card:
-            pairs.append((game, card))
-            ui.label("Player Name").bind_text_from(game.player, "name")
-            ui.label("Efficiency").bind_text_from(
-                game.get_script("里洞魔石"), "efficiency"
-            )
-            for script_file_name in script_file_names:
-                script: Script = game.load_script(
-                    scripts_directory, script_file_name, "Script"
-                )
-                if script:
-                    ui.switch(text=script.name).bind_value_to(script, "enable")
-            game.start_loop()
-    to_remove = []
-    for game, card in pairs:
-        if game.is_closed:
-            card.clear()
-            card.delete()
-            card.set_visibility(False)
-            to_remove.append((game, card))
-    for item in to_remove:
-        pairs.remove(item)
-
+        update_ui()
 
 def exception_handler(exception=""):
-    """_summary_
+    """处理异常函数
 
     Args:
-        exception (_type_): _description_
+        exception (str): 异常描述
     """
+    logging.error(exception)
     print(exception)
 
-
 def close_notify():
-    """_summary_
-    """
+    """关闭通知处理函数"""
     Cg.close_handles()
     ui.notify('Done')
 
+def update_ui():
+    """更新UI元素"""
+    ui_container.clear()  # 清空容器
+    with ui_container:
+        for game in Cg.opened_cg_list:
+            if not game.is_closed:
+                with ui.card():
+                    ui.label("Player Name").bind_text_from(game.player, "name")
+                    ui.label("Account").bind_text_from(game, "account")
+                    for script in game._scripts:
+                        ui.switch(text=script.name).bind_value(script, "enable")
+    ui.update(ui_container)
+
 with ui.row():
     ui.button("解除多开限制", on_click=close_notify)
-with ui.row():
-    ui.timer(2, timer_handler)
+    ui.button("刷新", on_click=update_ui)
+
+ui_container = ui.row()  # 用于动态生成卡片的容器
+
 with ui.row():
     ui.label("Some message")
-ui.run(reload=False, port=native.find_open_port(8500,8999))
+
+ui.timer(1, timer_handler)
+
+ui.run(reload=False)

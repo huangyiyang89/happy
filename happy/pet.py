@@ -218,6 +218,11 @@ class BattlePet(Service, Pet):
         """_summary_"""
         return self.mem.read_int(0x00ED5054 + self.index * 0x5110)
 
+    @property
+    def injury(self):
+        """_summary_"""
+        return self.mem.read_int(0x00ED50BC + self.index * 0x5110)
+
 class PetCollection(Service):
     """_summary_
 

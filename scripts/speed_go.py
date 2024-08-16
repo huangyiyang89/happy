@@ -13,6 +13,7 @@ class Script(happy.Script):
         super().__init__(cg)
         self.name = "高速移动"
         self.speed = 125
+        self.enable =True
 
     def on_not_battle(self, cg: happy.Cg):
         cg.mem.write_int(0x00F4C460, self.speed)

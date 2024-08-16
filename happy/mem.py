@@ -31,7 +31,6 @@ class CgMem(pymem.Pymem):
             buff = buff.decode(encoding, "replace")
             return buff
         except Exception as e:  # pylint: disable=broad-except
-            print(buff)
             print(e)
             return ""
 
@@ -78,3 +77,8 @@ class CgMem(pymem.Pymem):
             return "进程ID不存在。"
         except psutil.AccessDenied:
             return "没有权限访问进程ID的信息。"
+
+
+class Interface:
+    def __init__(self,mem:CgMem) -> None:
+        self.mem = mem

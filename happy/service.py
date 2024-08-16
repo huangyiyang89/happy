@@ -44,6 +44,7 @@ class Service:
         )
 
         self.mem.write_string(0x00581000, content + " \0")
+        #print("decode_send:",content)
 
         # 触发说话
         # 聊天栏字符长度

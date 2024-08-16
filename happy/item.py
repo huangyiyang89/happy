@@ -145,6 +145,9 @@ class Item:
             # 提取括号内的数字字符串
             number_str = self.name[left_index + 1:right_index]
 
+            if number_str == "特價品":
+                return 0
+            
             # 尝试将字符串转换为整数，如果转换失败则返回 1
             try:
                 return int(number_str)

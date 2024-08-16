@@ -17,6 +17,7 @@ class Script(happy.Script):
         self.strategy = None
         self.enable_use_potion = False
         self.force_use_first_skill = False
+        self.enable = True
 
     def on_start(self, cg: Cg):
         cg.disable_shell()

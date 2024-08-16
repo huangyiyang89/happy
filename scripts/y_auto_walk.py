@@ -16,6 +16,8 @@ class Script(happy.Script):
         self.range = 2
         self.start_x = 0
         self.start_y = 0
+        self.stop_flag = False
+   
 
     def on_not_moving(self, cg: happy.Cg):
         """_summary_
@@ -23,7 +25,9 @@ class Script(happy.Script):
         Args:
             cg (happy.core.Cg): _description_
         """
-
+        if self.stop_flag:
+            return
+        
         if cg.map.x == 134 and cg.map.y == 174:
             cg.go_to(135, 175)
             return
@@ -50,6 +54,13 @@ class Script(happy.Script):
         else:
             cg.go_to(self.start_x, self.start_y)
 
+    def on_battle(self, cg):
+        for friend in self.cg.battle.units.friends:
+            if friend.hp <2 :
+                self.stop_flag = True
+                break
+
     def on_start(self, cg):
         self.start_x = 0
         self.start_y = 0
+        self.stop_flag = False

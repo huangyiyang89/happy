@@ -236,3 +236,30 @@ class Player(happy.service.Service):
             _type_: _description_
         """
         return self.mem.read_int(0x00CB0AF4)
+
+    @property
+    def endurance_points(self):
+        """
+        """
+        return self.mem.read_int(0x00F4C368)
+    
+    @property
+    def strength_points(self):
+        """
+        """
+        return self.mem.read_int(0x00F4C36C)
+    @property
+    def defense_points(self):
+        """
+        """
+        return self.mem.read_int(0x00F4C370)
+    @property
+    def agility_points(self):
+        """
+        """
+        return self.mem.read_int(0x00F4C374)
+    @property
+    def magical_points(self):
+        """
+        """
+        return self.mem.read_int(0x00F4C378)

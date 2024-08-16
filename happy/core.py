@@ -2,6 +2,7 @@
 HappyCG
 """
 
+import os, glob
 import threading
 import time
 import logging
@@ -27,6 +28,7 @@ class Cg(Service):
     """_summary_"""
 
     opened_cg_processes = []
+    opened_cg_list: list["Cg"] = []
 
     def __init__(self, mem: CgMem) -> None:
         super().__init__(mem)
@@ -54,23 +56,25 @@ class Cg(Service):
 
     @staticmethod
     def open(account=None, name=None):
-        """open cg process and add process to __opened_cg_processes[]
+        """open cg process and add to opened_cg_list
         Returns:
             _type_: HappyCG
         """
+        Cg.opened_cg_list.sort(key=lambda x: x.account)
         processes = CgMem.list_cg_processes()
+        process_ids = [cg.mem.process_id for cg in Cg.opened_cg_list]
         for process in processes:
-            if process not in Cg.opened_cg_processes:
+            if process not in process_ids:
                 mem = CgMem(process)
                 new_cg = Cg(mem)
-                if account and new_cg.account == account:
-                    Cg.opened_cg_processes.append(process)
-                    return new_cg
-                if name and new_cg.player.name and name in new_cg.player.name:
-                    Cg.opened_cg_processes.append(process)
-                    return new_cg
-                if not account and not name:
-                    Cg.opened_cg_processes.append(process)
+                if (
+                    (account and new_cg.account == account)
+                    or (name and new_cg.player.name and name in new_cg.player.name)
+                    or (not account and not name)
+                ):
+                    Cg.opened_cg_list.append(new_cg)
+                    new_cg.load_scripts()
+                    new_cg.start_loop()
                     return new_cg
         return None
 
@@ -106,7 +110,7 @@ class Cg(Service):
             self._is_running = False
         if not self.is_closed:
             self.is_closed = True
-            Cg.opened_cg_processes.remove(self.mem.process_id)
+            Cg.opened_cg_list.remove(self)
         if self.on_close is not None:
             self.on_close()
 
@@ -252,6 +256,15 @@ class Cg(Service):
         """
         self._decode_send(f"zA {self.map.x_62} {self.map.y_62} {direction} 0")
 
+    def load_scripts(self):
+        scripts_directory = os.path.join(os.path.dirname(sys.argv[0]), "scripts\\")
+        py_files = glob.glob(os.path.join(scripts_directory, "*.py"))
+        script_file_names = [
+            os.path.splitext(os.path.basename(file))[0] for file in py_files
+        ]
+        for script_file_name in script_file_names:
+            self.load_script(scripts_directory, script_file_name, "Script")
+
     def load_script(self, file_path, module_name, class_name):
         """_summary_
 
@@ -363,16 +376,21 @@ class Cg(Service):
             )
             time.sleep(0.5)
 
-    def use_item(self, item: Item):
+    def use_item(self, item: Item | str):
         """_summary_
 
         Args:
             item (Item): _description_
         """
-        if item:
-            self._decode_send(f"Ak {self.map.x_62} {self.map.y_62} {item.index_62} 0")
+        
+        if isinstance(item,str):
+            item_to_use = self.items.find(item)
+        if isinstance(item,Item):
+            item_to_use = item
+        if item_to_use:
+            self._decode_send(f"Ak {self.map.x_62} {self.map.y_62} {item_to_use.index_62} 0")
         else:
-            print("Item is None")
+            pass
 
     def select_target(self):
         """_summary_"""
@@ -431,6 +449,7 @@ class Cg(Service):
     def get_dialog_type(self):
         """没有对话窗口为FFFFFFFF=4294967295
         医生窗口为2
+        东门药剂师5
         卖东西为7
         Returns:
             _type_: _description_
@@ -439,7 +458,7 @@ class Cg(Service):
 
     def get_npc_type(self):
         """最近一次交互过的NPC类型
-        328普通护士 364资深护士 336医师
+        333东门药剂师 328普通护士 364资深护士 336医师
         对话结束值不变，不能判断是正否在对话
         Returns:
             _type_: _description_
@@ -448,6 +467,7 @@ class Cg(Service):
 
     def get_npc_id(self):
         """最近一次交互过的NPC id
+        9616东门药剂师
         对话结束值不变，不能判断是正否在对话
         Returns:
             _type_: _description_
@@ -533,8 +553,40 @@ class Cg(Service):
                     count = 1 if "寵物鈴鐺" in item.name else item.count
                     count = 1 if "紙人娃娃" in item.name else count
                     items_str += str(item.index) + r"\\z" + str(count) + r"\\z"
-            content = f"xD {x62} {y62} 5o {b62(npc_id)} 0 " + items_str[:-3]
+            if items_str != "":
+                content = f"xD {x62} {y62} 5o {b62(npc_id)} 0 " + items_str[:-3]
+                self._decode_send(content)
+
+    def engage_npc(
+        self, npc_x: int, npc_y: int, dialog_type: int, action: int, send_data: str
+    ):
+        """
+        与 NPC 交互的函数
+        f"xD {self.map.x_62} {self.map.y_62} {b62(action)} {b62(now_npc_id)} " + send_data
+        参数：
+            npc_x (int)：NPC 的 x 坐标
+            npc_y (int)：NPC 的 y 坐标
+            dialog_type (int)：对话类型
+            action (int)：交互动作（326=5g 对话 334=5o 表示卖，335=5p 表示买）
+            send_data (str)：要发送给 NPC 的数据
+
+        返回：
+            None
+        """
+        now_dialog_type = self.get_dialog_type()
+        if (
+            now_dialog_type == dialog_type
+            and abs(self.map.x - npc_x) <= 2
+            and abs(self.map.y - npc_y) <= 2
+        ):
+            now_npc_id = self.get_npc_id()
+            content = (
+                f"xD {self.map.x_62} {self.map.y_62} {b62(action)} {b62(now_npc_id)} "
+                + send_data
+            )
+            print("engage_npc:", content)
             self._decode_send(content)
+            time.sleep(1)
 
     def _stop_random_key(self):
         self.mem.write_bytes(0x00530CA3, bytes.fromhex("90 90 90 90 90"), 5)
@@ -728,20 +780,23 @@ class Cg(Service):
     def cure(self):
         """亞諾曼治療"""
         npc_id = self.get_npc_id()
-        self._decode_send(f"xD 9 7 5q {b62(npc_id)} 0 7")
-        logging.warning("%s 正在治疗", self.account)
+        if npc_id>0:
+            self._decode_send(f"xD 9 7 5q {b62(npc_id)} 0 7")
+            logging.warning("%s 正在治疗", self.account)
 
     def buy_crystal(self):
         """亞諾曼買水晶"""
         npc_id = self.get_npc_id()
-        self._decode_send(f"xD f m 5p {b62(npc_id)} 0 9" + r"\\z1")
-        logging.warning("%s 购买水晶", self.account)
+        if npc_id>0:
+            self._decode_send(f"xD f m 5p {b62(npc_id)} 0 9" + r"\\z1")
+            logging.warning("%s 购买水晶", self.account)
 
     def buy_bow(self):
         """亞諾曼買弓"""
         npc_id = self.get_npc_id()
-        self._decode_send(f"xD i d 5p {b62(npc_id)} 0 3" + r"\\z1")
-        logging.warning("%s 购买弓", self.account)
+        if npc_id>0:
+            self._decode_send(f"xD i d 5p {b62(npc_id)} 0 3" + r"\\z1")
+            logging.warning("%s 购买弓", self.account)
 
     def laba(self):
         """_summary_"""
@@ -750,7 +805,7 @@ class Cg(Service):
         self._decode_send(f"xD r j 5g {b62(npc_id)} 1")
 
     def add_point(self, index):
-        """_summary_
+        """加点 0 体力 1 力量 2 防御 3 敏捷 4 魔法
 
         Args:
             state_index (_type_): _description_

@@ -16,6 +16,7 @@ class Map(happy.service.Service):
     Args:
         happy (_type_): _description_
     """
+    map_dict = {}
 
     def __init__(self, mem: CgMem) -> None:
         super().__init__(mem)
@@ -123,6 +124,7 @@ class Map(happy.service.Service):
             self.map_flag_data = map_flag_30001
             set_rectangle_to_zero(self.map_flag_data, 150, 334, 151, 344,1)
             set_rectangle_to_zero(self.map_flag_data, 148, 333, 150, 335,1)
+            set_rectangle_to_zero(self.map_flag_data, 161,325,300, 340)
             # set_rectangle_to_zero(self.map_flag_data, 124, 310, 143, 325)
             # with open("exported_array.py", "w") as f:
             #     f.write("exported_array = ")
@@ -227,13 +229,21 @@ class Map(happy.service.Service):
 
         def neighbors(node, grid):
             x, y, _ = node
-            directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+            directions = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)]
             result = []
 
             for dx, dy in directions:
                 nx, ny = x + dx, y + dy
-                if 0 <= nx < len(grid[0]) and 0 <= ny < len(grid) and grid[ny][nx] == 1:
-                    result.append((nx, ny, node))
+                # Check if the neighbor is within bounds
+                if 0 <= nx < len(grid[0]) and 0 <= ny < len(grid) and 0 <= x < len(grid[0]) and 0 <= y < len(grid):
+                    # Check if the neighbor cell is walkable
+                    if grid[ny][nx] == 1:
+                        # For diagonal movement, ensure both horizontal and vertical paths are clear
+                        if dx != 0 and dy != 0:
+                            if grid[y][nx] == 1 and grid[ny][x] == 1:
+                                result.append((nx, ny, node))
+                        else:
+                            result.append((nx, ny, node))
 
             return result
 
@@ -262,7 +272,10 @@ class Map(happy.service.Service):
 
             for neighbor in neighbors(current, self.map_flag_data):
                 if neighbor[:2] not in visited:
-                    h = abs(neighbor[0] - goal[0]) + abs(neighbor[1] - goal[1])
+                    hx = abs(neighbor[0] - goal[0])
+                    hy = abs(neighbor[1] - goal[1])
+                    # Use Euclidean distance as heuristic for diagonal movement
+                    h = (hx ** 2 + hy ** 2) ** 0.5
                     heapq.heappush(heap, (cost + h, neighbor))
 
         return None
